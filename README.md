@@ -84,10 +84,11 @@ Logs: `~/Library/Logs/FreeTubeTopMusic.log`.
 
 A native Swift menu-bar item (♫) compiled at install time:
 
-- **Left-click** the ♫ for a Now Playing **popover**: album art, title, artist, a progress bar, and Play/Pause / Previous / Next / Shuffle.
+- **Left-click** the ♫ for a Now Playing **popover**: album art, title, artist, a draggable **scrub bar**, and Play/Pause / Previous / Next / Shuffle / ♥.
 - **Right-click** for the menu:
   - Now Playing title, Play/Pause, Next, Previous, **Shuffle All Genres** (uses the cross-genre Radio Mix).
   - **Genres** — click to play a genre, or **Shuffle `<genre>`** to start it at a random track.
+  - **♥ Favorites** — favorite the current track, or play any saved favorite.
   - **Resume last genre on login** (toggle) — remembers what you were playing and auto-resumes it at login.
   - **Refresh Top Charts** — regenerate the charts right now (quits FreeTube, refreshes, relaunches).
   - Open FreeTube, Reload Genres, Quit.
@@ -99,6 +100,16 @@ It runs at login and stays in the menu bar. To play a genre from the terminal:
 ```
 
 Source: `bar/FreeTubeBar.swift` (compiled with `swiftc`, requires Xcode Command Line Tools).
+
+### Favorites (♥)
+
+- The ♥ in the popover (or the **♥ Favorites → Favorite current track** menu item) saves the currently playing track to `favorites.json` instantly.
+- **♥ Favorites → Play All Favorites** merges them into FreeTube's built-in **Favorites** playlist and starts playing it.
+- Favorites are also merged into FreeTube's Favorites playlist automatically on every Top Charts refresh, so they persist and appear inside FreeTube itself.
+
+### Notifications
+
+The Top Charts updater posts a macOS notification each time it finishes a refresh, so you know when the charts have been regenerated.
 
 ### Resume on login
 
@@ -204,6 +215,7 @@ scripts/update-top-music.py            Top Charts playlist generator (18 genres)
 scripts/update-top-music.sh            Top Charts wrapper
 scripts/play-genre.sh                  Play a genre from the CLI
 scripts/resume-last.sh                 Resume last genre on login
+scripts/play-favorites.sh              Flush + play ♥ favorites
 scripts/freetube-doctor.sh             Diagnostics
 launchd/                               LaunchAgent templates
 docs/

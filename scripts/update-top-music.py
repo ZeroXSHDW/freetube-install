@@ -57,6 +57,7 @@ MIN_SONGS = 6  # do not overwrite an existing playlist with fewer than this
 DEFAULT_LIMIT = 15
 RADIO_ID = "ft-playlist--b3f8026b-4773-43a6-9f35-a477dca1b96d"
 RADIO_LIMIT = 100
+FAVORITES_ID = "favorites"
 
 
 def http_text(url: str, timeout: int = 25) -> str:
@@ -251,6 +252,57 @@ def write_playlists(path: pathlib.Path, docs: dict[str, dict], order: list[str])
             handle.write(json.dumps(docs[doc_id], ensure_ascii=False, separators=(",", ":")) + "\n")
 
 
+def flush_favorites(db_path: pathlib.Path, favorites_path: pathlib.Path) -> int:
+    """Merge favorites.json into FreeTube's built-in 'Favorites' playlist."""
+    if not favorites_path.is_file():
+        return 0
+    try:
+        favs = json.loads(favorites_path.read_text(encoding="utf-8"))
+    except Exception:
+        return 0
+    if not isinstance(favs, list) or not favs:
+        return 0
+
+    docs, order = load_playlists(db_path)
+    now = int(time.time() * 1000)
+    fav_doc = docs.get(FAVORITES_ID)
+    if fav_doc is None:
+        fav_doc = {
+            "playlistName": "Favorites",
+            "protected": False,
+            "description": "Your favorite videos",
+            "videos": [],
+            "_id": FAVORITES_ID,
+            "createdAt": now,
+        }
+        docs[FAVORITES_ID] = fav_doc
+        order.append(FAVORITES_ID)
+
+    existing = {v.get("videoId"): v for v in fav_doc.get("videos", []) if v.get("videoId")}
+    added = 0
+    for fav in favs:
+        vid = fav.get("videoId")
+        if not vid or vid in existing:
+            continue
+        existing[vid] = {
+            "videoId": vid,
+            "title": fav.get("title", ""),
+            "author": fav.get("author", ""),
+            "authorId": fav.get("authorId"),
+            "lengthSeconds": fav.get("lengthSeconds", 0),
+            "published": fav.get("published", 0),
+            "timeAdded": now,
+            "playlistItemId": str(uuid.uuid4()),
+            "type": "video",
+        }
+        added += 1
+
+    fav_doc["videos"] = list(existing.values())
+    fav_doc["lastUpdatedAt"] = now
+    write_playlists(db_path, docs, order)
+    return added
+
+
 def main() -> int:
     args = [a for a in sys.argv[1:]]
     db_arg = args[0] if args and not args[0].startswith("--") else ""
@@ -288,6 +340,13 @@ def main() -> int:
                 manifest.append({"name": "Radio Mix", "playlistId": RADIO_ID, "firstVideoId": rids[0], "videoIds": rids})
         manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"Rebuilt manifest ({len(manifest)} genres) from {db_path}")
+        return 0
+
+    # Merge favorites.json into FreeTube's 'Favorites' playlist without network access.
+    if "--favorites-only" in args:
+        fav_path = db_path.parent / "favorites.json"
+        added = flush_favorites(db_path, fav_path)
+        print(f"Flushed favorites into FreeTube ({added} new).")
         return 0
 
     genres = [g for g in GENRES if only is None or g[0].lower() in only]
@@ -364,8 +423,12 @@ def main() -> int:
     manifest_path.write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
     )
+    fav_path = db_path.parent / "favorites.json"
+    fav_added = flush_favorites(db_path, fav_path)
     print(f"\nWrote {len(order)} playlist records to {db_path}")
     print(f"Wrote manifest ({len(manifest)} genres) to {manifest_path}")
+    if fav_added:
+        print(f"Merged {fav_added} favorites into FreeTube's Favorites playlist.")
     return 0
 
 

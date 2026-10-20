@@ -3,8 +3,8 @@ import AppKit
 // FreeTubeBar — a native menu-bar controller for FreeTube.
 //
 // Left-click the ♫ icon for a Now Playing popover (album art, title, artist,
-// progress, transport, shuffle). Right-click for the full menu (genres,
-// shuffle, resume-on-login toggle, etc.).
+// a scrub bar, transport, shuffle, favorite). Right-click for the menu
+// (genres, shuffle, favorites, resume-on-login, refresh, etc.).
 
 @main
 struct FreeTubeBar {
@@ -31,16 +31,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var nowPlayingItem: NSMenuItem?
     private var resumeItem: NSMenuItem!
     private var genres: [Genre] = []
+    private var favorites: [[String: Any]] = []
     private let popover = NSPopover()
     private let playerVC = PlayerViewController()
 
-    private var supportDir: String {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        return "\(home)/Library/Application Support/FreeTube"
-    }
+    private var home: String { FileManager.default.homeDirectoryForCurrentUser.path }
+    private var supportDir: String { "\(home)/Library/Application Support/FreeTube" }
     private var manifestPath: String { "\(supportDir)/top-charts.json" }
     private var statePath: String { "\(supportDir)/last-genre.json" }
     private var resumeFlagPath: String { "\(supportDir)/resume-on-login" }
+    private var favoritesPath: String { "\(supportDir)/favorites.json" }
 
     private var nowPlayingCLI: String {
         for candidate in ["/opt/homebrew/bin/nowplaying-cli", "/usr/local/bin/nowplaying-cli", "/opt/local/bin/nowplaying-cli"] {
@@ -66,13 +66,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         playerVC.onTransport = { [weak self] command in
             self?.runProcess([self?.nowPlayingCLI ?? "nowplaying-cli", command])
         }
+        playerVC.onSeek = { [weak self] seconds in
+            self?.runProcess([self?.nowPlayingCLI ?? "nowplaying-cli", "seek", "\(Int(seconds.rounded()))"])
+        }
         playerVC.onShuffle = { [weak self] in self?.shuffle() }
+        playerVC.onFavoriteToggle = { [weak self] in self?.toggleFavorite() }
+        playerVC.isFavorite = { [weak self] in self?.isCurrentFavorite() ?? false }
 
         loadManifest()
+        loadFavorites()
         rebuildMenu()
     }
 
-    // MARK: - Manifest
+    // MARK: - Manifest & favorites
 
     private func loadManifest() {
         guard let data = FileManager.default.contents(atPath: manifestPath),
@@ -87,6 +93,62 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let videoIds = (entry["videoIds"] as? [String]) ?? [firstVideoId]
             return Genre(name: name, playlistId: playlistId, firstVideoId: firstVideoId, videoIds: videoIds)
         }
+    }
+
+    private func loadFavorites() {
+        guard let data = FileManager.default.contents(atPath: favoritesPath),
+              let objects = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            favorites = []
+            return
+        }
+        favorites = objects
+    }
+
+    private func saveFavorites() {
+        guard let data = try? JSONSerialization.data(withJSONObject: favorites, options: []) else { return }
+        try? FileManager.default.createDirectory(atPath: supportDir, withIntermediateDirectories: true)
+        try? data.write(to: URL(fileURLWithPath: favoritesPath), options: .atomic)
+    }
+
+    /// The most recently played track, read from FreeTube's history.db.
+    private func currentTrack() -> [String: Any]? {
+        guard let content = try? String(contentsOfFile: "\(supportDir)/history.db", encoding: .utf8) else { return nil }
+        var latest: [String: Any]?
+        var latestTime: Double = -1
+        for line in content.split(separator: "\n") {
+            guard let data = line.data(using: .utf8),
+                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { continue }
+            let t = (obj["timeWatched"] as? NSNumber)?.doubleValue ?? 0
+            if t > latestTime {
+                latestTime = t
+                latest = obj
+            }
+        }
+        return latest
+    }
+
+    private func isCurrentFavorite() -> Bool {
+        guard let videoId = currentTrack()?["videoId"] as? String else { return false }
+        return favorites.contains { ($0["videoId"] as? String) == videoId }
+    }
+
+    private func toggleFavorite() {
+        guard let track = currentTrack(), let videoId = track["videoId"] as? String else { return }
+        if let index = favorites.firstIndex(where: { ($0["videoId"] as? String) == videoId }) {
+            favorites.remove(at: index)
+        } else {
+            favorites.append([
+                "videoId": videoId,
+                "title": track["title"] ?? "",
+                "author": track["author"] ?? "",
+                "authorId": track["authorId"] ?? "",
+                "lengthSeconds": track["lengthSeconds"] ?? 0,
+                "published": track["published"] ?? 0,
+            ])
+        }
+        saveFavorites()
+        rebuildMenu()
+        playerVC.refreshHeart()
     }
 
     // MARK: - Menu
@@ -134,6 +196,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             genresItem.submenu = genresMenu
             m.addItem(genresItem)
         }
+
+        // Favorites
+        let favMenu = NSMenu(title: "Favorites")
+        let playFavs = NSMenuItem(title: "Play All Favorites", action: #selector(playAllFavorites), keyEquivalent: "")
+        playFavs.target = self
+        favMenu.addItem(playFavs)
+        let toggleFav = NSMenuItem(title: "♥ Favorite current track", action: #selector(toggleFavoriteMenu), keyEquivalent: "")
+        toggleFav.target = self
+        favMenu.addItem(toggleFav)
+        if favorites.isEmpty {
+            let none = NSMenuItem(title: "(none yet)", action: nil, keyEquivalent: "")
+            none.isEnabled = false
+            favMenu.addItem(none)
+        } else {
+            favMenu.addItem(.separator())
+            for fav in favorites.prefix(40) {
+                let title = (fav["title"] as? String) ?? ""
+                let item = NSMenuItem(title: title, action: #selector(openFavorite(_:)), keyEquivalent: "")
+                item.target = self
+                item.representedObject = fav["videoId"] as? String
+                favMenu.addItem(item)
+            }
+        }
+        let favItem = NSMenuItem(title: "♥ Favorites", action: nil, keyEquivalent: "")
+        favItem.submenu = favMenu
+        m.addItem(favItem)
 
         m.addItem(.separator())
 
@@ -193,7 +281,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func playPause() { _ = runProcess([nowPlayingCLI, "togglePlayPause"]) }
     @objc private func nextTrack() { _ = runProcess([nowPlayingCLI, "next"]) }
     @objc private func previousTrack() { _ = runProcess([nowPlayingCLI, "previous"]) }
-
     @objc private func openFreeTube() { _ = runProcess(["/usr/bin/open", "-a", "FreeTube"]) }
 
     @objc private func playGenre(_ sender: NSMenuItem) {
@@ -214,7 +301,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func shuffle() {
-        // Prefer the cross-genre Radio Mix when available.
         if let radio = genres.first(where: { $0.name == "Radio Mix" }),
            let videoId = radio.videoIds.randomElement() {
             let url = "https://www.youtube.com/watch?v=\(videoId)&list=\(radio.playlistId)"
@@ -227,6 +313,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let url = "https://www.youtube.com/watch?v=\(videoId)&list=\(genre.playlistId)"
         recordLast(playlistId: genre.playlistId, videoId: videoId)
         _ = runProcess(["/usr/bin/open", "-a", "FreeTube", url])
+    }
+
+    @objc private func toggleFavoriteMenu() { toggleFavorite() }
+
+    @objc private func openFavorite(_ sender: NSMenuItem) {
+        guard let videoId = sender.representedObject as? String else { return }
+        _ = runProcess(["/usr/bin/open", "-a", "FreeTube", "https://www.youtube.com/watch?v=\(videoId)"])
+    }
+
+    @objc private func playAllFavorites() {
+        _ = runProcess(["/bin/bash", "\(home)/Library/Scripts/play-favorites.sh"])
     }
 
     @objc private func toggleResume() {
@@ -246,9 +343,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func refreshCharts() {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
         _ = runProcess(["/bin/bash", "\(home)/Library/Scripts/update-top-music.sh", "--force"])
         loadManifest()
+        loadFavorites()
         rebuildMenu()
     }
 
@@ -283,20 +380,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
 // MARK: - Player popover
 
+final class SeekSlider: NSSlider {
+    var isDragging = false
+    override func mouseDown(with event: NSEvent) {
+        isDragging = true
+        super.mouseDown(with: event)
+        isDragging = false
+    }
+}
+
 final class PlayerViewController: NSViewController {
     var onTransport: ((String) -> Void)?
+    var onSeek: ((Double) -> Void)?
     var onShuffle: (() -> Void)?
+    var onFavoriteToggle: (() -> Void)?
+    var isFavorite: (() -> Bool)?
 
     private let artwork = NSImageView()
     private let titleLabel = NSTextField(labelWithString: "—")
     private let artistLabel = NSTextField(labelWithString: "")
     private let timeLabel = NSTextField(labelWithString: "0:00 / 0:00")
-    private let progress = NSProgressIndicator()
+    private let seek = SeekSlider()
+    private var heartButton: NSButton!
     private var timer: Timer?
-    private var lastArtwork: String = ""
+    private var lastArtwork = ""
+    private var lastTitle = ""
 
     override func loadView() {
-        let view = NSView(frame: NSRect(x: 0, y: 0, width: 260, height: 230))
+        let view = NSView(frame: NSRect(x: 0, y: 0, width: 260, height: 250))
 
         artwork.imageScaling = .scaleProportionallyUpOrDown
         artwork.wantsLayer = true
@@ -316,11 +427,12 @@ final class PlayerViewController: NSViewController {
         artistLabel.lineBreakMode = .byTruncatingTail
         view.addSubview(artistLabel)
 
-        progress.style = .bar
-        progress.isIndeterminate = false
-        progress.minValue = 0
-        progress.maxValue = 1
-        view.addSubview(progress)
+        seek.minValue = 0
+        seek.maxValue = 1
+        seek.isContinuous = false
+        seek.target = self
+        seek.action = #selector(seekChanged(_:))
+        view.addSubview(seek)
 
         timeLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .regular)
         timeLabel.textColor = .secondaryLabelColor
@@ -329,14 +441,16 @@ final class PlayerViewController: NSViewController {
 
         let row = NSStackView()
         row.orientation = .horizontal
-        row.spacing = 18
+        row.spacing = 16
         row.addArrangedSubview(makeButton("backward.fill", #selector(previous)))
         row.addArrangedSubview(makeButton("play.fill", #selector(playPause)))
         row.addArrangedSubview(makeButton("forward.fill", #selector(next)))
         row.addArrangedSubview(makeButton("shuffle", #selector(shuffle)))
+        heartButton = makeButton("heart", #selector(favorite))
+        row.addArrangedSubview(heartButton)
         view.addSubview(row)
 
-        [artwork, titleLabel, artistLabel, progress, timeLabel, row].forEach { $0.translatesAutoresizingMaskIntoConstraints = false }
+        [artwork, titleLabel, artistLabel, seek, timeLabel, row].forEach { $0.translatesAutoresizingMaskIntoConstraints = false }
 
         NSLayoutConstraint.activate([
             artwork.topAnchor.constraint(equalTo: view.topAnchor, constant: 14),
@@ -352,11 +466,11 @@ final class PlayerViewController: NSViewController {
             artistLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 14),
             artistLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -14),
 
-            progress.topAnchor.constraint(equalTo: artistLabel.bottomAnchor, constant: 8),
-            progress.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 14),
-            progress.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -14),
+            seek.topAnchor.constraint(equalTo: artistLabel.bottomAnchor, constant: 10),
+            seek.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 14),
+            seek.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -14),
 
-            timeLabel.topAnchor.constraint(equalTo: progress.bottomAnchor, constant: 4),
+            timeLabel.topAnchor.constraint(equalTo: seek.bottomAnchor, constant: 2),
             timeLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
             row.topAnchor.constraint(equalTo: timeLabel.bottomAnchor, constant: 8),
@@ -391,9 +505,16 @@ final class PlayerViewController: NSViewController {
         }
     }
 
+    func refreshHeart() {
+        heartButton.image = NSImage(systemSymbolName: (isFavorite?() ?? false) ? "heart.fill" : "heart",
+                                    accessibilityDescription: "favorite")
+        heartButton.contentTintColor = (isFavorite?() ?? false) ? .systemRed : .labelColor
+    }
+
     private func refresh() {
-        let json = runProcess(["nowplaying-cli", "get", "--json",
-                               "title", "artist", "duration", "elapsedTime", "playbackRate", "artworkData"])
+        // nowplaying-cli's "get elapsedTime" key is unreliable, so read the raw
+        // MediaRemote dictionary which carries title/artist/duration/position/art.
+        let json = runProcess(["nowplaying-cli", "get-raw"])
         guard let data = json.data(using: .utf8),
               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             titleLabel.stringValue = "Nothing playing"
@@ -401,17 +522,25 @@ final class PlayerViewController: NSViewController {
             return
         }
 
-        let title = obj["title"] as? String ?? ""
-        let artist = obj["artist"] as? String ?? ""
+        let title = obj["kMRMediaRemoteNowPlayingInfoTitle"] as? String ?? ""
+        let artist = obj["kMRMediaRemoteNowPlayingInfoArtist"] as? String ?? ""
         titleLabel.stringValue = title.isEmpty ? "Nothing playing" : title
         artistLabel.stringValue = artist
 
-        let duration = (obj["duration"] as? NSNumber)?.doubleValue ?? 0
-        let elapsed = (obj["elapsedTime"] as? NSNumber)?.doubleValue ?? 0
+        let duration = (obj["kMRMediaRemoteNowPlayingInfoDuration"] as? NSNumber)?.doubleValue ?? 0
+        let elapsed = (obj["kMRMediaRemoteNowPlayingInfoElapsedTime"] as? NSNumber)?.doubleValue ?? 0
         timeLabel.stringValue = "\(fmt(elapsed)) / \(fmt(duration))"
-        progress.doubleValue = duration > 0 ? elapsed / duration : 0
+        if !seek.isDragging {
+            seek.maxValue = duration > 0 ? duration : 1
+            seek.doubleValue = elapsed
+        }
 
-        if let b64 = obj["artworkData"] as? String, b64 != lastArtwork,
+        if title != lastTitle {
+            lastTitle = title
+            refreshHeart()
+        }
+
+        if let b64 = obj["kMRMediaRemoteNowPlayingInfoArtworkData"] as? String, b64 != lastArtwork,
            let imgData = Data(base64Encoded: b64), let image = NSImage(data: imgData) {
             artwork.image = image
             lastArtwork = b64
@@ -423,10 +552,17 @@ final class PlayerViewController: NSViewController {
         return String(format: "%d:%02d", total / 60, total % 60)
     }
 
+    @objc private func seekChanged(_ sender: NSSlider) {
+        onSeek?(sender.doubleValue)
+    }
     @objc private func playPause() { onTransport?("togglePlayPause") }
     @objc private func next() { onTransport?("next") }
     @objc private func previous() { onTransport?("previous") }
     @objc private func shuffle() { onShuffle?() }
+    @objc private func favorite() {
+        onFavoriteToggle?()
+        refreshHeart()
+    }
 
     private func runProcess(_ arguments: [String]) -> String {
         let process = Process()

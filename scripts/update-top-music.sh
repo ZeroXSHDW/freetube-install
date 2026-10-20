@@ -70,6 +70,11 @@ else
 fi
 log "Top Charts refresh finished."
 
+# Notify the user that the charts were refreshed.
+if ((!DRY)); then
+  /usr/bin/osascript -e 'display notification "Top Charts playlists refreshed (18 genres + Radio Mix)." with title "FreeTube"' >/dev/null 2>&1 || true
+fi
+
 if ((WAS_RUNNING)) && ((FORCE)); then
   for candidate in "$HOME/Applications/FreeTube.app" "/Applications/FreeTube.app"; do
     if [[ -d "$candidate" ]]; then open "$candidate"; break; fi

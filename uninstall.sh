@@ -52,6 +52,7 @@ rm -f "$HOME/Library/Scripts/update-top-music.py"
 rm -f "$HOME/Library/Scripts/update-top-music.sh"
 rm -f "$HOME/Library/Scripts/play-genre.sh"
 rm -f "$HOME/Library/Scripts/resume-last.sh"
+rm -f "$HOME/Library/Scripts/play-favorites.sh"
 rm -rf "$HOME/Library/Application Support/FreeTubeBar"
 echo "Auto-updater, Top Charts updater and menu bar app removed."
 

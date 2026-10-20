@@ -203,7 +203,8 @@ cp "$REPO_DIR/scripts/update-top-music.py" "$SCRIPTS_DEST/update-top-music.py"
 cp "$REPO_DIR/scripts/update-top-music.sh" "$SCRIPTS_DEST/update-top-music.sh"
 cp "$REPO_DIR/scripts/play-genre.sh" "$SCRIPTS_DEST/play-genre.sh"
 cp "$REPO_DIR/scripts/resume-last.sh" "$SCRIPTS_DEST/resume-last.sh"
-chmod +x "$SCRIPTS_DEST/update-top-music.sh" "$SCRIPTS_DEST/play-genre.sh" "$SCRIPTS_DEST/resume-last.sh"
+cp "$REPO_DIR/scripts/play-favorites.sh" "$SCRIPTS_DEST/play-favorites.sh"
+chmod +x "$SCRIPTS_DEST/update-top-music.sh" "$SCRIPTS_DEST/play-genre.sh" "$SCRIPTS_DEST/resume-last.sh" "$SCRIPTS_DEST/play-favorites.sh"
 
 mkdir -p "$HOME/Library/LaunchAgents"
 sed -e "s|__HOME__|$HOME|g" \
