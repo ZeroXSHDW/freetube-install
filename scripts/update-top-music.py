@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import random
 import re
 import sys
 import time
@@ -54,6 +55,8 @@ MANAGED_PREFIX = "Top Charts —"
 INSTANCES_URL = "https://api.invidious.io/instances.json?sort_by=health"
 MIN_SONGS = 6  # do not overwrite an existing playlist with fewer than this
 DEFAULT_LIMIT = 15
+RADIO_ID = "ft-playlist--b3f8026b-4773-43a6-9f35-a477dca1b96d"
+RADIO_LIMIT = 100
 
 
 def http_text(url: str, timeout: int = 25) -> str:
@@ -133,12 +136,32 @@ def score_result(item: dict, artist: str, title: str) -> int:
     return score
 
 
+def is_bad_match(item: dict) -> bool:
+    """Heuristics that exclude non-music or mis-resolved results."""
+    title = (item.get("title") or "").lower()
+    if item.get("liveNow"):
+        return True
+    if re.search(r"\blive\b|🔴|stream|пресс|конференц|обзор|прохождение", title):
+        return True
+    return False
+
+
 def resolve_song(instances: list[str], artist: str, title: str) -> dict | None:
     query = f"{primary_artist(artist)} {clean_title(title)}"
     results = search_invidious(instances, query)
     if not results:
         return None
-    best = max(results, key=lambda item: score_result(item, artist, title))
+    candidates = []
+    for item in results:
+        if is_bad_match(item):
+            continue
+        score = score_result(item, artist, title)
+        if score < 2:  # require a title OR artist match, no random fallbacks
+            continue
+        candidates.append((score, item.get("viewCount") or 0, item))
+    if not candidates:
+        return None
+    _, _, best = max(candidates, key=lambda c: (c[0], c[1]))
     return {
         "videoId": best.get("videoId"),
         "title": best.get("title") or title,
@@ -258,6 +281,11 @@ def main() -> int:
             if not ids:
                 continue
             manifest.append({"name": name, "playlistId": pid, "firstVideoId": ids[0], "videoIds": ids})
+        radio_doc = docs.get(RADIO_ID)
+        if radio_doc:
+            rids = [v.get("videoId") for v in radio_doc.get("videos", []) if v.get("videoId")]
+            if rids:
+                manifest.append({"name": "Radio Mix", "playlistId": RADIO_ID, "firstVideoId": rids[0], "videoIds": rids})
         manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"Rebuilt manifest ({len(manifest)} genres) from {db_path}")
         return 0
@@ -272,13 +300,27 @@ def main() -> int:
     now = int(time.time() * 1000)
     refreshed = time.strftime("%Y-%m-%d %H:%M")
 
-    managed_ids = {g[3] for g in genres}
+    managed_ids = {g[3] for g in genres} | {RADIO_ID}
     results = []
     for name, country, genre_id, pid in genres:
         print(f"\n== {name} ==")
         videos = build_genre(instances, name, country, genre_id, limit)
         results.append((name, pid, videos))
         print(f"   resolved {len(videos)} videos")
+
+    # Build a cross-genre "Radio Mix" from everything resolved this run.
+    pool: list[dict] = []
+    seen_radio: set[str] = set()
+    for _name, _pid, videos in results:
+        for video in videos:
+            if video["videoId"] not in seen_radio:
+                seen_radio.add(video["videoId"])
+                pool.append(video)
+    random.shuffle(pool)
+    radio_videos = pool[:RADIO_LIMIT]
+    if len(radio_videos) >= MIN_SONGS:
+        results.append(("Radio Mix", RADIO_ID, radio_videos))
+        print(f"\n== Radio Mix ==\n   {len(radio_videos)} tracks across genres")
 
     manifest = []
     for name, pid, videos in results:

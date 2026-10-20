@@ -143,7 +143,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         m.addItem(resumeItem)
 
         m.addItem(makeItem("Open FreeTube", #selector(openFreeTube)))
-        m.addItem(makeItem("Refresh Genres", #selector(refreshGenres)))
+        m.addItem(makeItem("Refresh Top Charts", #selector(refreshCharts)))
+        m.addItem(makeItem("Reload Genres", #selector(refreshGenres)))
 
         m.addItem(.separator())
 
@@ -213,6 +214,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func shuffle() {
+        // Prefer the cross-genre Radio Mix when available.
+        if let radio = genres.first(where: { $0.name == "Radio Mix" }),
+           let videoId = radio.videoIds.randomElement() {
+            let url = "https://www.youtube.com/watch?v=\(videoId)&list=\(radio.playlistId)"
+            recordLast(playlistId: radio.playlistId, videoId: videoId)
+            _ = runProcess(["/usr/bin/open", "-a", "FreeTube", url])
+            return
+        }
         guard let genre = genres.randomElement() else { return }
         let videoId = genre.videoIds.randomElement() ?? genre.firstVideoId
         let url = "https://www.youtube.com/watch?v=\(videoId)&list=\(genre.playlistId)"
@@ -232,6 +241,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func refreshGenres() {
+        loadManifest()
+        rebuildMenu()
+    }
+
+    @objc private func refreshCharts() {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        _ = runProcess(["/bin/bash", "\(home)/Library/Scripts/update-top-music.sh", "--force"])
         loadManifest()
         rebuildMenu()
     }
