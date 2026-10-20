@@ -198,7 +198,8 @@ mkdir -p "$SCRIPTS_DEST"
 cp "$REPO_DIR/scripts/update-top-music.py" "$SCRIPTS_DEST/update-top-music.py"
 cp "$REPO_DIR/scripts/update-top-music.sh" "$SCRIPTS_DEST/update-top-music.sh"
 cp "$REPO_DIR/scripts/play-genre.sh" "$SCRIPTS_DEST/play-genre.sh"
-chmod +x "$SCRIPTS_DEST/update-top-music.sh" "$SCRIPTS_DEST/play-genre.sh"
+cp "$REPO_DIR/scripts/resume-last.sh" "$SCRIPTS_DEST/resume-last.sh"
+chmod +x "$SCRIPTS_DEST/update-top-music.sh" "$SCRIPTS_DEST/play-genre.sh" "$SCRIPTS_DEST/resume-last.sh"
 
 mkdir -p "$HOME/Library/LaunchAgents"
 sed -e "s|__HOME__|$HOME|g" \
@@ -211,6 +212,16 @@ launchctl bootout "gui/$UID_NUM/local.freetube.topmusic" 2>/dev/null || true
 launchctl bootstrap "gui/$UID_NUM" "$HOME/Library/LaunchAgents/local.freetube.topmusic.plist"
 launchctl enable "gui/$UID_NUM/local.freetube.topmusic"
 echo "Top Charts updater installed (refreshes 18 genre playlists)."
+
+# Resume-last-genre-on-login helper.
+sed -e "s|__HOME__|$HOME|g" \
+    -e "s|__SCRIPT__|$SCRIPTS_DEST/resume-last.sh|g" \
+    "$REPO_DIR/launchd/local.freetube.resume.plist.template" \
+    > "$HOME/Library/LaunchAgents/local.freetube.resume.plist"
+launchctl bootout "gui/$UID_NUM/local.freetube.resume" 2>/dev/null || true
+launchctl bootstrap "gui/$UID_NUM" "$HOME/Library/LaunchAgents/local.freetube.resume.plist"
+launchctl enable "gui/$UID_NUM/local.freetube.resume"
+echo "Resume-on-login helper installed."
 
 # Menu bar app (FreeTubeBar): genres + Now Playing transport controls.
 BAR_DIR="$HOME/Library/Application Support/FreeTubeBar"

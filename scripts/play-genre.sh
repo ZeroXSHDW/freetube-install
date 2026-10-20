@@ -39,4 +39,20 @@ fi
 
 URL="https://www.youtube.com/watch?v=$FIRST&list=$PID"
 echo "Playing $ARG -> $URL"
+
+# Remember this as the last-played genre so "resume on login" can pick it up.
+python3 - "$MANIFEST" "$PID" "$FIRST" <<'PY'
+import json, pathlib, sys
+manifest = pathlib.Path(sys.argv[1])
+pid, first = sys.argv[2], sys.argv[3]
+data = json.loads(manifest.read_text(encoding="utf-8"))
+name = pid
+for entry in data:
+    if entry.get("playlistId") == pid:
+        name = entry.get("name", pid)
+        break
+state = pathlib.Path.home() / "Library/Application Support/FreeTube/last-genre.json"
+state.write_text(json.dumps({"name": name, "playlistId": pid, "videoId": first}, ensure_ascii=False), encoding="utf-8")
+PY
+
 open -a FreeTube "$URL"

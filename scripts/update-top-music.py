@@ -246,6 +246,22 @@ def main() -> int:
     )
     manifest_path = db_path.parent / "top-charts.json"
 
+    # Rebuild the manifest from existing playlists without any network access.
+    if "--manifest-only" in args:
+        docs, _ = load_playlists(db_path)
+        manifest = []
+        for name, _country, _gid, pid in GENRES:
+            doc = docs.get(pid)
+            if not doc:
+                continue
+            ids = [v.get("videoId") for v in doc.get("videos", []) if v.get("videoId")]
+            if not ids:
+                continue
+            manifest.append({"name": name, "playlistId": pid, "firstVideoId": ids[0], "videoIds": ids})
+        manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"Rebuilt manifest ({len(manifest)} genres) from {db_path}")
+        return 0
+
     genres = [g for g in GENRES if only is None or g[0].lower() in only]
 
     print("Fetching Invidious instances…")
@@ -282,7 +298,12 @@ def main() -> int:
             docs[pid] = doc
             if pid not in order:
                 order.append(pid)
-            manifest.append({"name": name, "playlistId": pid, "firstVideoId": videos[0]["videoId"]})
+            manifest.append({
+                "name": name,
+                "playlistId": pid,
+                "firstVideoId": videos[0]["videoId"],
+                "videoIds": [v["videoId"] for v in videos],
+            })
         else:
             print(f"WARN  {name}: only {len(videos)} songs resolved (< {MIN_SONGS}); keeping existing.")
 

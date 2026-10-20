@@ -88,6 +88,13 @@ else
   note "FreeTubeBar menu bar app absent"
 fi
 
+# Resume-on-login helper.
+if [[ -f "$HOME/Library/Scripts/resume-last.sh" ]]; then
+  pass "resume-on-login helper present"
+else
+  note "resume-on-login helper absent"
+fi
+
 # Config.
 SUPPORT="$HOME/Library/Application Support/FreeTube"
 if [[ -f "$SUPPORT/settings.db" ]]; then

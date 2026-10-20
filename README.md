@@ -80,11 +80,14 @@ Logs: `~/Library/Logs/FreeTubeTopMusic.log`.
 
 ## Menu bar app (FreeTubeBar)
 
-A native Swift menu-bar item (♫) compiled at install time. It shows:
+A native Swift menu-bar item (♫) compiled at install time:
 
-- **Now Playing** title, with **Play/Pause**, **Next**, and **Previous**.
-- A **Genres** menu — click any genre and FreeTube opens and starts playing that genre's Top Charts playlist.
-- **Open FreeTube**, **Refresh Genres**, and **Quit**.
+- **Left-click** the ♫ for a Now Playing **popover**: album art, title, artist, a progress bar, and Play/Pause / Previous / Next / Shuffle.
+- **Right-click** for the menu:
+  - Now Playing title, Play/Pause, Next, Previous, **Shuffle All Genres**.
+  - **Genres** — click to play a genre, or **Shuffle `<genre>`** to start it at a random track.
+  - **Resume last genre on login** (toggle) — remembers what you were playing and auto-resumes it at login.
+  - Open FreeTube, Refresh Genres, Quit.
 
 It runs at login and stays in the menu bar. To play a genre from the terminal:
 
@@ -93,6 +96,10 @@ It runs at login and stays in the menu bar. To play a genre from the terminal:
 ```
 
 Source: `bar/FreeTubeBar.swift` (compiled with `swiftc`, requires Xcode Command Line Tools).
+
+### Resume on login
+
+When **Resume last genre on login** is on, the last genre you played is recorded to `~/Library/Application Support/FreeTube/last-genre.json`, and a login LaunchAgent re-opens it in FreeTube a few seconds after you sign in. Turn the toggle off in the ♫ menu to disable it.
 
 ## Verify / troubleshoot
 
@@ -124,6 +131,7 @@ scripts/freetube-autoupdate.sh         Checksum-verified auto-updater
 scripts/update-top-music.py            Top Charts playlist generator (18 genres)
 scripts/update-top-music.sh            Top Charts wrapper
 scripts/play-genre.sh                  Play a genre from the CLI
+scripts/resume-last.sh                 Resume last genre on login
 scripts/freetube-doctor.sh             Diagnostics
 launchd/                               LaunchAgent templates
 docs/
