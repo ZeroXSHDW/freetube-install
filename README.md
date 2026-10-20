@@ -2,6 +2,18 @@
 
 Installs the official [FreeTube](https://freetubeapp.io/) macOS release with SHA-256 verification, writes a tuned base config, generates the Top Charts music playlists, installs the menu bar app, and registers the auto-updater and login helpers — all from a single command. Companion to [freetube-configs](https://github.com/ZeroXSHDW/freetube-configs-main), which holds the portable settings, curated playlists, and profiles.
 
+## Showcase
+
+▶ **Live interactive 3D viewer:** <https://zeroxshdw.github.io/freetube-install/>
+
+An orbit/zoom 3D scene of the whole system (menu bar, 18 genre nodes, Radio Mix, Now Playing). Embed it on any site:
+
+```html
+<iframe src="https://zeroxshdw.github.io/freetube-install/"
+        style="width:100%;height:640px;border:0;border-radius:16px;"
+        title="FreeTube macOS Music System" loading="lazy"></iframe>
+```
+
 ## Why this exists
 
 FreeTube's macOS builds are **ad-hoc signed, not notarized**, so the Homebrew cask is disabled and Gatekeeper blocks the app by default. This installer:
