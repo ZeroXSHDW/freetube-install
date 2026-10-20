@@ -10,7 +10,9 @@ FreeTube's macOS builds are **ad-hoc signed, not notarized**, so the Homebrew ca
 2. Verifies the app bundle's code signature after install.
 3. Removes the quarantine attribute so macOS allows it to run.
 4. Optionally restores a config snapshot from `freetube-configs`.
-5. Installs a LaunchAgent that keeps FreeTube up to date at login and every 6 hours.
+5. Installs two LaunchAgents:
+   - **FreeTube auto-update** (login + every 6 h).
+   - **Top Charts refresh** (login + every 6 h) — keeps three playlists updated with the most popular English rap, Russian rap, and Spanish Latin music.
 
 > The release DMG is **not** committed here (GitHub rejects files over 100 MB). The installer always downloads the current release and verifies its digest.
 
@@ -58,6 +60,27 @@ launchctl kickstart -k gui/$(id -u)/local.freetube.autoupdate
 
 Logs: `~/Library/Logs/FreeTubeAutoUpdate.log`. The updater skips while FreeTube is running and never replaces the app without verifying the digest and signature.
 
+## Top Charts auto-update
+
+FreeTube has no built-in "auto-populate trending" feature, so this repo adds one. It:
+
+1. Pulls the iTunes Top 100 genre charts (a key-free proxy for "most popular music"):
+   - **English rap** — US Hip-Hop/Rap
+   - **Russian rap** — RU Hip-Hop/Rap
+   - **Spanish Latin** — US Latino
+2. Resolves each song to its official YouTube video via Invidious.
+3. Drops removed videos and writes three playlists into FreeTube's `playlists.db`:
+   `Top Charts — English Rap`, `Top Charts — Russian Rap`, `Top Charts — Spanish Latin`.
+
+It runs at login and every 6 hours, but only when FreeTube is **closed** (editing the database under a running app would be overwritten). To refresh now:
+
+```bash
+~/Library/Scripts/update-top-music.sh --force   # quits, refreshes, relaunches
+~/Library/Scripts/update-top-music.sh --dry-run # preview without changing anything
+```
+
+Logs: `~/Library/Logs/FreeTubeTopMusic.log`.
+
 ## Verify / troubleshoot
 
 ```bash
@@ -84,8 +107,10 @@ install.sh                             Main installer
 uninstall.sh
 verify.sh
 scripts/freetube-autoupdate.sh         Checksum-verified auto-updater
+scripts/update-top-music.py            Top Charts playlist generator
+scripts/update-top-music.sh            Top Charts wrapper
 scripts/freetube-doctor.sh             Diagnostics
-launchd/                               LaunchAgent template
+launchd/                               LaunchAgent templates
 docs/
 ```
 

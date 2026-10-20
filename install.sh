@@ -192,6 +192,25 @@ else
   echo "Auto-updater installed (runs at login and every 6 hours)."
 fi
 
+# Top Charts auto-updater (works for both install locations; edits user playlists).
+SCRIPTS_DEST="$HOME/Library/Scripts"
+mkdir -p "$SCRIPTS_DEST"
+cp "$REPO_DIR/scripts/update-top-music.py" "$SCRIPTS_DEST/update-top-music.py"
+cp "$REPO_DIR/scripts/update-top-music.sh" "$SCRIPTS_DEST/update-top-music.sh"
+chmod +x "$SCRIPTS_DEST/update-top-music.sh"
+
+mkdir -p "$HOME/Library/LaunchAgents"
+sed -e "s|__HOME__|$HOME|g" \
+    -e "s|__SCRIPT__|$SCRIPTS_DEST/update-top-music.sh|g" \
+    "$REPO_DIR/launchd/local.freetube.topmusic.plist.template" \
+    > "$HOME/Library/LaunchAgents/local.freetube.topmusic.plist"
+
+UID_NUM="$(id -u)"
+launchctl bootout "gui/$UID_NUM/local.freetube.topmusic" 2>/dev/null || true
+launchctl bootstrap "gui/$UID_NUM" "$HOME/Library/LaunchAgents/local.freetube.topmusic.plist"
+launchctl enable "gui/$UID_NUM/local.freetube.topmusic"
+echo "Top Charts updater installed (refreshes English/Russian/Spanish top music)."
+
 # Restore config snapshot.
 if ((RESTORE_CONFIG)); then
   if [[ -z "$CONFIG_DIR" ]]; then

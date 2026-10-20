@@ -58,6 +58,23 @@ else
   note "updater LaunchAgent absent"
 fi
 
+# Top Charts updater.
+TM_PLIST="$HOME/Library/LaunchAgents/local.freetube.topmusic.plist"
+if [[ -f "$HOME/Library/Scripts/update-top-music.sh" ]]; then
+  pass "Top Charts updater script present"
+else
+  note "Top Charts updater script absent"
+fi
+if [[ -f "$TM_PLIST" ]]; then
+  if launchctl print "gui/$(id -u)/local.freetube.topmusic" >/dev/null 2>&1; then
+    pass "Top Charts updater loaded"
+  else
+    warn "Top Charts updater not loaded"
+  fi
+else
+  note "Top Charts updater LaunchAgent absent"
+fi
+
 # Config.
 SUPPORT="$HOME/Library/Application Support/FreeTube"
 if [[ -f "$SUPPORT/settings.db" ]]; then

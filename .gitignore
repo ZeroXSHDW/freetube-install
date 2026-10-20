@@ -10,3 +10,5 @@
 .DS_Store
 *.log
 *.bak
+*.pyc
+__pycache__/
