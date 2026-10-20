@@ -43,16 +43,20 @@ launchctl bootout "gui/$UID_NUM/local.freetube.autoupdate" 2>/dev/null || true
 launchctl bootout "gui/$UID_NUM/local.freetube.topmusic" 2>/dev/null || true
 launchctl bootout "gui/$UID_NUM/local.freetube.bar" 2>/dev/null || true
 launchctl bootout "gui/$UID_NUM/local.freetube.resume" 2>/dev/null || true
+launchctl bootout "gui/$UID_NUM/local.freetube.audiopause" 2>/dev/null || true
 rm -f "$HOME/Library/LaunchAgents/local.freetube.autoupdate.plist"
 rm -f "$HOME/Library/LaunchAgents/local.freetube.topmusic.plist"
 rm -f "$HOME/Library/LaunchAgents/local.freetube.bar.plist"
 rm -f "$HOME/Library/LaunchAgents/local.freetube.resume.plist"
+rm -f "$HOME/Library/LaunchAgents/local.freetube.audiopause.plist"
 rm -f "$HOME/Library/Scripts/FreeTubeAutoUpdate.sh"
 rm -f "$HOME/Library/Scripts/update-top-music.py"
 rm -f "$HOME/Library/Scripts/update-top-music.sh"
 rm -f "$HOME/Library/Scripts/play-genre.sh"
 rm -f "$HOME/Library/Scripts/resume-last.sh"
 rm -f "$HOME/Library/Scripts/play-favorites.sh"
+rm -f "$HOME/Library/Scripts/play-watch-later.sh"
+rm -f "$HOME/Library/Scripts/audio-pause.sh"
 rm -rf "$HOME/Library/Application Support/FreeTubeBar"
 echo "Auto-updater, Top Charts updater and menu bar app removed."
 

@@ -58,6 +58,7 @@ DEFAULT_LIMIT = 15
 RADIO_ID = "ft-playlist--b3f8026b-4773-43a6-9f35-a477dca1b96d"
 RADIO_LIMIT = 100
 FAVORITES_ID = "favorites"
+WATCH_LATER_ID = "watchLater"
 
 
 def http_text(url: str, timeout: int = 25) -> str:
@@ -252,55 +253,60 @@ def write_playlists(path: pathlib.Path, docs: dict[str, dict], order: list[str])
             handle.write(json.dumps(docs[doc_id], ensure_ascii=False, separators=(",", ":")) + "\n")
 
 
-def flush_favorites(db_path: pathlib.Path, favorites_path: pathlib.Path) -> int:
-    """Merge favorites.json into FreeTube's built-in 'Favorites' playlist."""
-    if not favorites_path.is_file():
+def flush_pinned(db_path: pathlib.Path, pinned_path: pathlib.Path, playlist_id: str,
+                 name: str, description: str) -> int:
+    """Merge a pinned-track JSON list into a FreeTube playlist (favorites / watch later)."""
+    if not pinned_path.is_file():
         return 0
     try:
-        favs = json.loads(favorites_path.read_text(encoding="utf-8"))
+        pinned = json.loads(pinned_path.read_text(encoding="utf-8"))
     except Exception:
         return 0
-    if not isinstance(favs, list) or not favs:
+    if not isinstance(pinned, list) or not pinned:
         return 0
 
     docs, order = load_playlists(db_path)
     now = int(time.time() * 1000)
-    fav_doc = docs.get(FAVORITES_ID)
-    if fav_doc is None:
-        fav_doc = {
-            "playlistName": "Favorites",
+    doc = docs.get(playlist_id)
+    if doc is None:
+        doc = {
+            "playlistName": name,
             "protected": False,
-            "description": "Your favorite videos",
+            "description": description,
             "videos": [],
-            "_id": FAVORITES_ID,
+            "_id": playlist_id,
             "createdAt": now,
         }
-        docs[FAVORITES_ID] = fav_doc
-        order.append(FAVORITES_ID)
+        docs[playlist_id] = doc
+        order.append(playlist_id)
 
-    existing = {v.get("videoId"): v for v in fav_doc.get("videos", []) if v.get("videoId")}
+    existing = {v.get("videoId"): v for v in doc.get("videos", []) if v.get("videoId")}
     added = 0
-    for fav in favs:
-        vid = fav.get("videoId")
+    for pin in pinned:
+        vid = pin.get("videoId")
         if not vid or vid in existing:
             continue
         existing[vid] = {
             "videoId": vid,
-            "title": fav.get("title", ""),
-            "author": fav.get("author", ""),
-            "authorId": fav.get("authorId"),
-            "lengthSeconds": fav.get("lengthSeconds", 0),
-            "published": fav.get("published", 0),
+            "title": pin.get("title", ""),
+            "author": pin.get("author", ""),
+            "authorId": pin.get("authorId"),
+            "lengthSeconds": pin.get("lengthSeconds", 0),
+            "published": pin.get("published", 0),
             "timeAdded": now,
             "playlistItemId": str(uuid.uuid4()),
             "type": "video",
         }
         added += 1
 
-    fav_doc["videos"] = list(existing.values())
-    fav_doc["lastUpdatedAt"] = now
+    doc["videos"] = list(existing.values())
+    doc["lastUpdatedAt"] = now
     write_playlists(db_path, docs, order)
     return added
+
+
+def flush_favorites(db_path: pathlib.Path, favorites_path: pathlib.Path) -> int:
+    return flush_pinned(db_path, favorites_path, FAVORITES_ID, "Favorites", "Your favorite videos")
 
 
 def main() -> int:
@@ -342,11 +348,16 @@ def main() -> int:
         print(f"Rebuilt manifest ({len(manifest)} genres) from {db_path}")
         return 0
 
-    # Merge favorites.json into FreeTube's 'Favorites' playlist without network access.
+    # Merge pinned tracks into FreeTube's playlists without network access.
     if "--favorites-only" in args:
         fav_path = db_path.parent / "favorites.json"
         added = flush_favorites(db_path, fav_path)
         print(f"Flushed favorites into FreeTube ({added} new).")
+        return 0
+    if "--watch-later-only" in args:
+        wl_path = db_path.parent / "watchLater.json"
+        added = flush_pinned(db_path, wl_path, WATCH_LATER_ID, "Watch Later", "Videos to watch later")
+        print(f"Flushed watch-later into FreeTube ({added} new).")
         return 0
 
     genres = [g for g in GENRES if only is None or g[0].lower() in only]
@@ -425,10 +436,14 @@ def main() -> int:
     )
     fav_path = db_path.parent / "favorites.json"
     fav_added = flush_favorites(db_path, fav_path)
+    wl_path = db_path.parent / "watchLater.json"
+    wl_added = flush_pinned(db_path, wl_path, WATCH_LATER_ID, "Watch Later", "Videos to watch later")
     print(f"\nWrote {len(order)} playlist records to {db_path}")
     print(f"Wrote manifest ({len(manifest)} genres) to {manifest_path}")
     if fav_added:
         print(f"Merged {fav_added} favorites into FreeTube's Favorites playlist.")
+    if wl_added:
+        print(f"Merged {wl_added} watch-later into FreeTube's Watch Later playlist.")
     return 0
 
 

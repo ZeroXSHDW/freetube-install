@@ -84,11 +84,11 @@ Logs: `~/Library/Logs/FreeTubeTopMusic.log`.
 
 A native Swift menu-bar item (♫) compiled at install time:
 
-- **Left-click** the ♫ for a Now Playing **popover**: album art, title, artist, a draggable **scrub bar**, and Play/Pause / Previous / Next / Shuffle / ♥.
+- **Left-click** the ♫ for a Now Playing **popover**: album art, title, artist, a draggable **scrub bar**, and Play/Pause / Previous / Next / Shuffle / ♥ / 🕓.
 - **Right-click** for the menu:
   - Now Playing title, Play/Pause, Next, Previous, **Shuffle All Genres** (uses the cross-genre Radio Mix).
   - **Genres** — click to play a genre, or **Shuffle `<genre>`** to start it at a random track.
-  - **♥ Favorites** — favorite the current track, or play any saved favorite.
+  - **♥ Favorites** and **🕓 Watch Later** — pin the current track, or play any saved item.
   - **Resume last genre on login** (toggle) — remembers what you were playing and auto-resumes it at login.
   - **Refresh Top Charts** — regenerate the charts right now (quits FreeTube, refreshes, relaunches).
   - Open FreeTube, Reload Genres, Quit.
@@ -101,11 +101,16 @@ It runs at login and stays in the menu bar. To play a genre from the terminal:
 
 Source: `bar/FreeTubeBar.swift` (compiled with `swiftc`, requires Xcode Command Line Tools).
 
-### Favorites (♥)
+### Favorites (♥) and Watch Later (🕓)
 
-- The ♥ in the popover (or the **♥ Favorites → Favorite current track** menu item) saves the currently playing track to `favorites.json` instantly.
-- **♥ Favorites → Play All Favorites** merges them into FreeTube's built-in **Favorites** playlist and starts playing it.
-- Favorites are also merged into FreeTube's Favorites playlist automatically on every Top Charts refresh, so they persist and appear inside FreeTube itself.
+- The ♥ / 🕓 buttons in the popover (or the corresponding menu items) pin the currently playing track instantly to `favorites.json` / `watchLater.json`.
+- **♥ Favorites → Play All Favorites** (or **🕓 Watch Later → Play All Watch Later**) merges them into FreeTube's built-in **Favorites** / **Watch Later** playlist and starts playing it.
+- Pinned tracks are also merged into FreeTube's playlists automatically on every Top Charts refresh, so they persist and appear inside FreeTube itself.
+- The `freetube-configs` companion repo syncs both lists (`config/favorites.json`, `config/watchLater.json`) so they travel with your portable backup.
+
+### AirPods auto-pause
+
+A background watcher (`local.freetube.audiopause`) monitors the default audio output. When AirPods or Bluetooth headphones are removed and the audio falls back to the built-in speakers, it **pauses FreeTube** so music doesn't suddenly play out loud. It only acts when FreeTube is the active Now Playing app.
 
 ### Notifications
 
@@ -210,12 +215,15 @@ install.sh                             Main installer
 uninstall.sh
 verify.sh
 bar/FreeTubeBar.swift                  Menu bar app source
+bar/audiodevice.swift                  Default audio output helper (CoreAudio)
 scripts/freetube-autoupdate.sh         Checksum-verified auto-updater
 scripts/update-top-music.py            Top Charts playlist generator (18 genres)
 scripts/update-top-music.sh            Top Charts wrapper
 scripts/play-genre.sh                  Play a genre from the CLI
 scripts/resume-last.sh                 Resume last genre on login
 scripts/play-favorites.sh              Flush + play ♥ favorites
+scripts/play-watch-later.sh            Flush + play 🕓 watch later
+scripts/audio-pause.sh                 AirPods auto-pause watcher
 scripts/freetube-doctor.sh             Diagnostics
 launchd/                               LaunchAgent templates
 docs/

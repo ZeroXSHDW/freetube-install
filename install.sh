@@ -204,7 +204,10 @@ cp "$REPO_DIR/scripts/update-top-music.sh" "$SCRIPTS_DEST/update-top-music.sh"
 cp "$REPO_DIR/scripts/play-genre.sh" "$SCRIPTS_DEST/play-genre.sh"
 cp "$REPO_DIR/scripts/resume-last.sh" "$SCRIPTS_DEST/resume-last.sh"
 cp "$REPO_DIR/scripts/play-favorites.sh" "$SCRIPTS_DEST/play-favorites.sh"
-chmod +x "$SCRIPTS_DEST/update-top-music.sh" "$SCRIPTS_DEST/play-genre.sh" "$SCRIPTS_DEST/resume-last.sh" "$SCRIPTS_DEST/play-favorites.sh"
+cp "$REPO_DIR/scripts/play-watch-later.sh" "$SCRIPTS_DEST/play-watch-later.sh"
+cp "$REPO_DIR/scripts/audio-pause.sh" "$SCRIPTS_DEST/audio-pause.sh"
+chmod +x "$SCRIPTS_DEST/update-top-music.sh" "$SCRIPTS_DEST/play-genre.sh" "$SCRIPTS_DEST/resume-last.sh" \
+  "$SCRIPTS_DEST/play-favorites.sh" "$SCRIPTS_DEST/play-watch-later.sh" "$SCRIPTS_DEST/audio-pause.sh"
 
 mkdir -p "$HOME/Library/LaunchAgents"
 sed -e "s|__HOME__|$HOME|g" \
@@ -242,6 +245,17 @@ if command -v swiftc >/dev/null 2>&1; then
   launchctl bootstrap "gui/$UID_NUM" "$HOME/Library/LaunchAgents/local.freetube.bar.plist"
   launchctl enable "gui/$UID_NUM/local.freetube.bar"
   echo "FreeTubeBar menu bar app installed (♫ icon)."
+
+  # Audio device helper + AirPods auto-pause watcher.
+  swiftc -O "$REPO_DIR/bar/audiodevice.swift" -o "$BAR_DIR/audiodevice"
+  sed -e "s|__HOME__|$HOME|g" \
+      -e "s|__SCRIPT__|$SCRIPTS_DEST/audio-pause.sh|g" \
+      "$REPO_DIR/launchd/local.freetube.audiopause.plist.template" \
+      > "$HOME/Library/LaunchAgents/local.freetube.audiopause.plist"
+  launchctl bootout "gui/$UID_NUM/local.freetube.audiopause" 2>/dev/null || true
+  launchctl bootstrap "gui/$UID_NUM" "$HOME/Library/LaunchAgents/local.freetube.audiopause.plist"
+  launchctl enable "gui/$UID_NUM/local.freetube.audiopause"
+  echo "AirPods auto-pause watcher installed."
 else
   echo "Note: swiftc (Xcode Command Line Tools) not found; skipping the menu bar app."
 fi

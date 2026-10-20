@@ -32,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var resumeItem: NSMenuItem!
     private var genres: [Genre] = []
     private var favorites: [[String: Any]] = []
+    private var watchLater: [[String: Any]] = []
     private let popover = NSPopover()
     private let playerVC = PlayerViewController()
 
@@ -41,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statePath: String { "\(supportDir)/last-genre.json" }
     private var resumeFlagPath: String { "\(supportDir)/resume-on-login" }
     private var favoritesPath: String { "\(supportDir)/favorites.json" }
+    private var watchLaterPath: String { "\(supportDir)/watchLater.json" }
 
     private var nowPlayingCLI: String {
         for candidate in ["/opt/homebrew/bin/nowplaying-cli", "/usr/local/bin/nowplaying-cli", "/opt/local/bin/nowplaying-cli"] {
@@ -72,6 +74,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         playerVC.onShuffle = { [weak self] in self?.shuffle() }
         playerVC.onFavoriteToggle = { [weak self] in self?.toggleFavorite() }
         playerVC.isFavorite = { [weak self] in self?.isCurrentFavorite() ?? false }
+        playerVC.onWatchLaterToggle = { [weak self] in self?.toggleWatchLater() }
+        playerVC.isWatchLater = { [weak self] in self?.isCurrentWatchLater() ?? false }
 
         loadManifest()
         loadFavorites()
@@ -96,18 +100,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func loadFavorites() {
-        guard let data = FileManager.default.contents(atPath: favoritesPath),
-              let objects = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-            favorites = []
-            return
-        }
-        favorites = objects
+        favorites = loadPinned(atPath: favoritesPath)
+        watchLater = loadPinned(atPath: watchLaterPath)
     }
 
-    private func saveFavorites() {
-        guard let data = try? JSONSerialization.data(withJSONObject: favorites, options: []) else { return }
+    private func loadPinned(atPath path: String) -> [[String: Any]] {
+        guard let data = FileManager.default.contents(atPath: path),
+              let objects = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            return []
+        }
+        return objects
+    }
+
+    private func savePinned(_ list: [[String: Any]], atPath path: String) {
+        guard let data = try? JSONSerialization.data(withJSONObject: list, options: []) else { return }
         try? FileManager.default.createDirectory(atPath: supportDir, withIntermediateDirectories: true)
-        try? data.write(to: URL(fileURLWithPath: favoritesPath), options: .atomic)
+        try? data.write(to: URL(fileURLWithPath: path), options: .atomic)
     }
 
     /// The most recently played track, read from FreeTube's history.db.
@@ -127,17 +135,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return latest
     }
 
-    private func isCurrentFavorite() -> Bool {
-        guard let videoId = currentTrack()?["videoId"] as? String else { return false }
-        return favorites.contains { ($0["videoId"] as? String) == videoId }
+    private func isPinned(_ list: [[String: Any]], videoId: String?) -> Bool {
+        guard let videoId = videoId else { return false }
+        return list.contains { ($0["videoId"] as? String) == videoId }
     }
 
-    private func toggleFavorite() {
+    private func togglePinned(_ list: inout [[String: Any]], path: String) {
         guard let track = currentTrack(), let videoId = track["videoId"] as? String else { return }
-        if let index = favorites.firstIndex(where: { ($0["videoId"] as? String) == videoId }) {
-            favorites.remove(at: index)
+        if let index = list.firstIndex(where: { ($0["videoId"] as? String) == videoId }) {
+            list.remove(at: index)
         } else {
-            favorites.append([
+            list.append([
                 "videoId": videoId,
                 "title": track["title"] ?? "",
                 "author": track["author"] ?? "",
@@ -146,10 +154,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 "published": track["published"] ?? 0,
             ])
         }
-        saveFavorites()
+        savePinned(list, atPath: path)
         rebuildMenu()
         playerVC.refreshHeart()
+        playerVC.refreshWatchLaterHeart()
     }
+
+    private func isCurrentFavorite() -> Bool {
+        isPinned(favorites, videoId: currentTrack()?["videoId"] as? String)
+    }
+
+    private func isCurrentWatchLater() -> Bool {
+        isPinned(watchLater, videoId: currentTrack()?["videoId"] as? String)
+    }
+
+    private func toggleFavorite() { togglePinned(&favorites, path: favoritesPath) }
+    private func toggleWatchLater() { togglePinned(&watchLater, path: watchLaterPath) }
 
     // MARK: - Menu
 
@@ -222,6 +242,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let favItem = NSMenuItem(title: "♥ Favorites", action: nil, keyEquivalent: "")
         favItem.submenu = favMenu
         m.addItem(favItem)
+
+        // Watch Later
+        let wlMenu = NSMenu(title: "Watch Later")
+        let playWL = NSMenuItem(title: "Play All Watch Later", action: #selector(playAllWatchLater), keyEquivalent: "")
+        playWL.target = self
+        wlMenu.addItem(playWL)
+        let toggleWL = NSMenuItem(title: "🕓 Watch Later current track", action: #selector(toggleWatchLaterMenu), keyEquivalent: "")
+        toggleWL.target = self
+        wlMenu.addItem(toggleWL)
+        if watchLater.isEmpty {
+            let none = NSMenuItem(title: "(none yet)", action: nil, keyEquivalent: "")
+            none.isEnabled = false
+            wlMenu.addItem(none)
+        } else {
+            wlMenu.addItem(.separator())
+            for item in watchLater.prefix(40) {
+                let title = (item["title"] as? String) ?? ""
+                let entry = NSMenuItem(title: title, action: #selector(openWatchLater(_:)), keyEquivalent: "")
+                entry.target = self
+                entry.representedObject = item["videoId"] as? String
+                wlMenu.addItem(entry)
+            }
+        }
+        let wlItem = NSMenuItem(title: "🕓 Watch Later", action: nil, keyEquivalent: "")
+        wlItem.submenu = wlMenu
+        m.addItem(wlItem)
 
         m.addItem(.separator())
 
@@ -326,6 +372,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         _ = runProcess(["/bin/bash", "\(home)/Library/Scripts/play-favorites.sh"])
     }
 
+    @objc private func toggleWatchLaterMenu() { toggleWatchLater() }
+
+    @objc private func openWatchLater(_ sender: NSMenuItem) {
+        guard let videoId = sender.representedObject as? String else { return }
+        _ = runProcess(["/usr/bin/open", "-a", "FreeTube", "https://www.youtube.com/watch?v=\(videoId)"])
+    }
+
+    @objc private func playAllWatchLater() {
+        _ = runProcess(["/bin/bash", "\(home)/Library/Scripts/play-watch-later.sh"])
+    }
+
     @objc private func toggleResume() {
         if FileManager.default.fileExists(atPath: resumeFlagPath) {
             try? FileManager.default.removeItem(atPath: resumeFlagPath)
@@ -395,6 +452,8 @@ final class PlayerViewController: NSViewController {
     var onShuffle: (() -> Void)?
     var onFavoriteToggle: (() -> Void)?
     var isFavorite: (() -> Bool)?
+    var onWatchLaterToggle: (() -> Void)?
+    var isWatchLater: (() -> Bool)?
 
     private let artwork = NSImageView()
     private let titleLabel = NSTextField(labelWithString: "—")
@@ -402,6 +461,7 @@ final class PlayerViewController: NSViewController {
     private let timeLabel = NSTextField(labelWithString: "0:00 / 0:00")
     private let seek = SeekSlider()
     private var heartButton: NSButton!
+    private var watchLaterButton: NSButton!
     private var timer: Timer?
     private var lastArtwork = ""
     private var lastTitle = ""
@@ -448,6 +508,8 @@ final class PlayerViewController: NSViewController {
         row.addArrangedSubview(makeButton("shuffle", #selector(shuffle)))
         heartButton = makeButton("heart", #selector(favorite))
         row.addArrangedSubview(heartButton)
+        watchLaterButton = makeButton("clock", #selector(watchLater))
+        row.addArrangedSubview(watchLaterButton)
         view.addSubview(row)
 
         [artwork, titleLabel, artistLabel, seek, timeLabel, row].forEach { $0.translatesAutoresizingMaskIntoConstraints = false }
@@ -511,6 +573,12 @@ final class PlayerViewController: NSViewController {
         heartButton.contentTintColor = (isFavorite?() ?? false) ? .systemRed : .labelColor
     }
 
+    func refreshWatchLaterHeart() {
+        watchLaterButton.image = NSImage(systemSymbolName: (isWatchLater?() ?? false) ? "clock.fill" : "clock",
+                                         accessibilityDescription: "watch later")
+        watchLaterButton.contentTintColor = (isWatchLater?() ?? false) ? .systemBlue : .labelColor
+    }
+
     private func refresh() {
         // nowplaying-cli's "get elapsedTime" key is unreliable, so read the raw
         // MediaRemote dictionary which carries title/artist/duration/position/art.
@@ -562,6 +630,11 @@ final class PlayerViewController: NSViewController {
     @objc private func favorite() {
         onFavoriteToggle?()
         refreshHeart()
+    }
+
+    @objc private func watchLater() {
+        onWatchLaterToggle?()
+        refreshWatchLaterHeart()
     }
 
     private func runProcess(_ arguments: [String]) -> String {
