@@ -197,7 +197,8 @@ SCRIPTS_DEST="$HOME/Library/Scripts"
 mkdir -p "$SCRIPTS_DEST"
 cp "$REPO_DIR/scripts/update-top-music.py" "$SCRIPTS_DEST/update-top-music.py"
 cp "$REPO_DIR/scripts/update-top-music.sh" "$SCRIPTS_DEST/update-top-music.sh"
-chmod +x "$SCRIPTS_DEST/update-top-music.sh"
+cp "$REPO_DIR/scripts/play-genre.sh" "$SCRIPTS_DEST/play-genre.sh"
+chmod +x "$SCRIPTS_DEST/update-top-music.sh" "$SCRIPTS_DEST/play-genre.sh"
 
 mkdir -p "$HOME/Library/LaunchAgents"
 sed -e "s|__HOME__|$HOME|g" \
@@ -209,7 +210,25 @@ UID_NUM="$(id -u)"
 launchctl bootout "gui/$UID_NUM/local.freetube.topmusic" 2>/dev/null || true
 launchctl bootstrap "gui/$UID_NUM" "$HOME/Library/LaunchAgents/local.freetube.topmusic.plist"
 launchctl enable "gui/$UID_NUM/local.freetube.topmusic"
-echo "Top Charts updater installed (refreshes English/Russian/Spanish top music)."
+echo "Top Charts updater installed (refreshes 18 genre playlists)."
+
+# Menu bar app (FreeTubeBar): genres + Now Playing transport controls.
+BAR_DIR="$HOME/Library/Application Support/FreeTubeBar"
+mkdir -p "$BAR_DIR"
+if command -v swiftc >/dev/null 2>&1; then
+  swiftc -parse-as-library -swift-version 5 -O \
+    "$REPO_DIR/bar/FreeTubeBar.swift" -o "$BAR_DIR/FreeTubeBar"
+  sed -e "s|__HOME__|$HOME|g" \
+      -e "s|__BIN__|$BAR_DIR/FreeTubeBar|g" \
+      "$REPO_DIR/launchd/local.freetube.bar.plist.template" \
+      > "$HOME/Library/LaunchAgents/local.freetube.bar.plist"
+  launchctl bootout "gui/$UID_NUM/local.freetube.bar" 2>/dev/null || true
+  launchctl bootstrap "gui/$UID_NUM" "$HOME/Library/LaunchAgents/local.freetube.bar.plist"
+  launchctl enable "gui/$UID_NUM/local.freetube.bar"
+  echo "FreeTubeBar menu bar app installed (♫ icon)."
+else
+  echo "Note: swiftc (Xcode Command Line Tools) not found; skipping the menu bar app."
+fi
 
 # Restore config snapshot.
 if ((RESTORE_CONFIG)); then

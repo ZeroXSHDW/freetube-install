@@ -10,9 +10,10 @@ FreeTube's macOS builds are **ad-hoc signed, not notarized**, so the Homebrew ca
 2. Verifies the app bundle's code signature after install.
 3. Removes the quarantine attribute so macOS allows it to run.
 4. Optionally restores a config snapshot from `freetube-configs`.
-5. Installs two LaunchAgents:
+5. Installs three LaunchAgents:
    - **FreeTube auto-update** (login + every 6 h).
-   - **Top Charts refresh** (login + every 6 h) — keeps three playlists updated with the most popular English rap, Russian rap, and Spanish Latin music.
+   - **Top Charts refresh** (login + every 6 h) — keeps 18 genre playlists updated with the most popular music in each genre.
+   - **FreeTubeBar** — a native menu-bar app (♫ icon) with Now Playing controls and a click-to-play genre menu.
 
 > The release DMG is **not** committed here (GitHub rejects files over 100 MB). The installer always downloads the current release and verifies its digest.
 
@@ -64,13 +65,9 @@ Logs: `~/Library/Logs/FreeTubeAutoUpdate.log`. The updater skips while FreeTube 
 
 FreeTube has no built-in "auto-populate trending" feature, so this repo adds one. It:
 
-1. Pulls the iTunes Top 100 genre charts (a key-free proxy for "most popular music"):
-   - **English rap** — US Hip-Hop/Rap
-   - **Russian rap** — RU Hip-Hop/Rap
-   - **Spanish Latin** — US Latino
+1. Pulls the iTunes Top 100 charts for **18 genres** (Pop, Hip-Hop/Rap, Rock, Country, R&B/Soul, Electronic, Dance, Alternative, Latin, Reggae, Jazz, Classical, Blues, Singer/Songwriter, World, Soundtrack, Russian Rap, Russian Pop).
 2. Resolves each song to its official YouTube video via Invidious.
-3. Drops removed videos and writes three playlists into FreeTube's `playlists.db`:
-   `Top Charts — English Rap`, `Top Charts — Russian Rap`, `Top Charts — Spanish Latin`.
+3. Drops removed videos and writes one FreeTube playlist per genre (`Top Charts — <Genre>`), plus a manifest the menu bar app reads.
 
 It runs at login and every 6 hours, but only when FreeTube is **closed** (editing the database under a running app would be overwritten). To refresh now:
 
@@ -80,6 +77,22 @@ It runs at login and every 6 hours, but only when FreeTube is **closed** (editin
 ```
 
 Logs: `~/Library/Logs/FreeTubeTopMusic.log`.
+
+## Menu bar app (FreeTubeBar)
+
+A native Swift menu-bar item (♫) compiled at install time. It shows:
+
+- **Now Playing** title, with **Play/Pause**, **Next**, and **Previous**.
+- A **Genres** menu — click any genre and FreeTube opens and starts playing that genre's Top Charts playlist.
+- **Open FreeTube**, **Refresh Genres**, and **Quit**.
+
+It runs at login and stays in the menu bar. To play a genre from the terminal:
+
+```bash
+~/Library/Scripts/play-genre.sh "Hip-Hop/Rap"     # or any genre name
+```
+
+Source: `bar/FreeTubeBar.swift` (compiled with `swiftc`, requires Xcode Command Line Tools).
 
 ## Verify / troubleshoot
 
@@ -106,9 +119,11 @@ Logs: `~/Library/Logs/FreeTubeTopMusic.log`.
 install.sh                             Main installer
 uninstall.sh
 verify.sh
+bar/FreeTubeBar.swift                  Menu bar app source
 scripts/freetube-autoupdate.sh         Checksum-verified auto-updater
-scripts/update-top-music.py            Top Charts playlist generator
+scripts/update-top-music.py            Top Charts playlist generator (18 genres)
 scripts/update-top-music.sh            Top Charts wrapper
+scripts/play-genre.sh                  Play a genre from the CLI
 scripts/freetube-doctor.sh             Diagnostics
 launchd/                               LaunchAgent templates
 docs/

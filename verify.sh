@@ -75,6 +75,19 @@ else
   note "Top Charts updater LaunchAgent absent"
 fi
 
+# Menu bar app.
+BAR_BIN="$HOME/Library/Application Support/FreeTubeBar/FreeTubeBar"
+if [[ -x "$BAR_BIN" ]]; then
+  pass "FreeTubeBar menu bar app present"
+  if launchctl print "gui/$(id -u)/local.freetube.bar" >/dev/null 2>&1; then
+    pass "FreeTubeBar loaded"
+  else
+    warn "FreeTubeBar not loaded"
+  fi
+else
+  note "FreeTubeBar menu bar app absent"
+fi
+
 # Config.
 SUPPORT="$HOME/Library/Application Support/FreeTube"
 if [[ -f "$SUPPORT/settings.db" ]]; then

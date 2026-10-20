@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
-"""Update FreeTube's auto-generated "Top Charts" playlists.
+"""Update FreeTube's auto-generated "Top Charts" playlists for many genres.
 
 Fetches the iTunes Top-100 genre charts (a reliable, key-free proxy for "most
 popular music"), resolves each song to its official YouTube video through
-Invidious, and writes three playlists into FreeTube's playlists.db:
+Invidious, and writes one FreeTube playlist per genre plus a manifest that the
+menu-bar app reads.
 
-  - Top Charts — English Rap   (US, Hip-Hop/Rap)
-  - Top Charts — Russian Rap   (RU, Hip-Hop/Rap)
-  - Top Charts — Spanish Latin (US, Latino)
+Genres span Pop, Hip-Hop/Rap, Rock, Country, R&B/Soul, Electronic, Dance,
+Alternative, Latin, Reggae, Jazz, Classical, Blues, Singer/Songwriter, World,
+Soundtrack, plus Russian Rap and Russian Pop.
 
 Run this only while FreeTube is closed. The companion shell wrapper enforces
-that and relaunches FreeTube afterwards.
-
-Requires only the Python standard library.
+that. Requires only the Python standard library.
 """
 from __future__ import annotations
 
@@ -29,32 +28,32 @@ from concurrent.futures import ThreadPoolExecutor
 
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
 
-CHARTS = [
-    {
-        "playlist_id": "ft-playlist--064ac4d6-c3ae-474e-8149-6358d4ef606d",
-        "name": "Top Charts — English Rap",
-        "description": "Auto-updated top English rap/hip-hop (iTunes Top 100: Hip-Hop/Rap, US).",
-        "url": "https://itunes.apple.com/us/rss/topsongs/limit=25/genre=18/explicit=true/json",
-        "limit": 20,
-    },
-    {
-        "playlist_id": "ft-playlist--c2066a73-7aa0-4de8-994c-cb194f8b0317",
-        "name": "Top Charts — Russian Rap",
-        "description": "Auto-updated top Russian rap/hip-hop (iTunes Top 100: Hip-Hop/Rap, RU).",
-        "url": "https://itunes.apple.com/ru/rss/topsongs/limit=25/genre=18/explicit=true/json",
-        "limit": 20,
-    },
-    {
-        "playlist_id": "ft-playlist--2dc1c2ca-ce8f-46aa-8b5d-dc85dab276e9",
-        "name": "Top Charts — Spanish Latin",
-        "description": "Auto-updated top Spanish-language Latin/urban (iTunes Top 100: Latino, US).",
-        "url": "https://itunes.apple.com/us/rss/topsongs/limit=25/genre=12/explicit=true/json",
-        "limit": 20,
-    },
+# name, country, iTunes genre id, playlist id
+GENRES = [
+    ("Pop", "us", 14, "ft-playlist--f57ffd84-a5ea-45d5-8129-b48e24f4d2dc"),
+    ("Hip-Hop/Rap", "us", 18, "ft-playlist--b4395627-d6b2-4d65-a296-1836e7aa6da9"),
+    ("Rock", "us", 21, "ft-playlist--7a04651f-260f-438d-ae53-0dd4e9d15f74"),
+    ("Country", "us", 6, "ft-playlist--04965f80-08ba-41f4-94ca-dbad384ec476"),
+    ("R&B/Soul", "us", 15, "ft-playlist--19410a60-d8d8-4b50-8169-dc46547f766f"),
+    ("Electronic", "us", 7, "ft-playlist--6d891e90-99a0-4a2f-8a23-b8d711d047f7"),
+    ("Dance", "us", 17, "ft-playlist--6369c292-8f69-494c-a32f-de68088c8135"),
+    ("Alternative", "us", 20, "ft-playlist--fb4aa356-4156-4804-b17c-156ec57e986c"),
+    ("Latin", "us", 12, "ft-playlist--53ffc935-95bf-4c6c-8925-e5b61857eb4a"),
+    ("Reggae", "us", 24, "ft-playlist--0d49ae5b-fd6f-41cd-a4dc-88aa88d5e88c"),
+    ("Jazz", "us", 11, "ft-playlist--6ee19f2d-4768-42f2-a244-5fc627ea0ec9"),
+    ("Classical", "us", 5, "ft-playlist--b52fb133-ce7b-49b3-a540-fd6c885eaab0"),
+    ("Blues", "us", 2, "ft-playlist--b607d848-2f2f-4bee-afb1-b0046c41826c"),
+    ("Singer/Songwriter", "us", 10, "ft-playlist--65deec75-f2c1-4a2d-95d4-d38f78d42754"),
+    ("World", "us", 19, "ft-playlist--9089cade-980f-484b-a9f2-3b3951d68554"),
+    ("Soundtrack", "us", 16, "ft-playlist--6a1d1c44-01fb-4410-a152-51de98fdc4d8"),
+    ("Russian Rap", "ru", 18, "ft-playlist--e318ffef-84db-4e77-9fd8-ecbd427b6168"),
+    ("Russian Pop", "ru", 14, "ft-playlist--c2fbb61e-369d-4403-ae12-f323d965b998"),
 ]
 
+MANAGED_PREFIX = "Top Charts —"
 INSTANCES_URL = "https://api.invidious.io/instances.json?sort_by=health"
-MIN_SONGS = 8  # do not overwrite an existing playlist with fewer than this
+MIN_SONGS = 6  # do not overwrite an existing playlist with fewer than this
+DEFAULT_LIMIT = 15
 
 
 def http_text(url: str, timeout: int = 25) -> str:
@@ -81,7 +80,8 @@ def get_instances() -> list[str]:
     return instances[:5] or ["https://invidious.f5.si"]
 
 
-def fetch_chart(url: str) -> list[tuple[str, str]]:
+def fetch_chart(country: str, genre_id: int, limit: int) -> list[tuple[str, str]]:
+    url = f"https://itunes.apple.com/{country}/rss/topsongs/limit={limit}/genre={genre_id}/explicit=true/json"
     data = http_json(url)
     entries = data.get("feed", {}).get("entry", [])
     songs = []
@@ -119,7 +119,6 @@ def score_result(item: dict, artist: str, title: str) -> int:
     video_title = (item.get("title") or "").lower()
     video_author = (item.get("author") or "").lower()
     length = item.get("lengthSeconds") or 0
-
     score = 0
     core = clean_title(title).lower()
     if core and core in video_title:
@@ -140,8 +139,6 @@ def resolve_song(instances: list[str], artist: str, title: str) -> dict | None:
     if not results:
         return None
     best = max(results, key=lambda item: score_result(item, artist, title))
-    if best is None:
-        return None
     return {
         "videoId": best.get("videoId"),
         "title": best.get("title") or title,
@@ -153,7 +150,6 @@ def resolve_song(instances: list[str], artist: str, title: str) -> dict | None:
 
 
 def oembed_available(video_id: str) -> bool:
-    """Return False only when YouTube reports the video is removed (404)."""
     url = (
         "https://www.youtube.com/oembed?"
         + urllib.parse.urlencode({"url": f"https://www.youtube.com/watch?v={video_id}", "format": "json"})
@@ -168,35 +164,35 @@ def oembed_available(video_id: str) -> bool:
         return True
 
 
-def build_chart(instances: list[str], chart: dict) -> list[dict]:
-    songs = fetch_chart(chart["url"])[: chart["limit"]]
-    resolved = []
-    for artist, title in songs:
-        item = resolve_song(instances, artist, title)
-        if item and item["videoId"]:
-            resolved.append((item, artist, title))
+def build_genre(instances: list[str], name: str, country: str, genre_id: int, limit: int) -> list[dict]:
+    songs = fetch_chart(country, genre_id, limit)
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        resolved = list(pool.map(lambda s: resolve_song(instances, s[0], s[1]), songs))
 
-    # Drop removed videos and duplicates.
-    video_ids = [r[0]["videoId"] for r in resolved]
+    video_ids = [r["videoId"] for r in resolved if r and r["videoId"]]
     with ThreadPoolExecutor(max_workers=8) as pool:
         flags = list(pool.map(oembed_available, video_ids))
 
     now = int(time.time() * 1000)
     videos: list[dict] = []
     seen: set[str] = set()
-    for (item, artist, title), ok in zip(resolved, flags):
-        vid = item["videoId"]
+    flag_iter = iter(flags)
+    for r in resolved:
+        if not r or not r["videoId"]:
+            continue
+        ok = next(flag_iter)
+        vid = r["videoId"]
         if not ok or vid in seen:
             continue
         seen.add(vid)
         videos.append(
             {
                 "videoId": vid,
-                "title": item["title"],
-                "author": item["author"],
-                "authorId": item["authorId"],
-                "lengthSeconds": item["lengthSeconds"],
-                "published": item["published"],
+                "title": r["title"],
+                "author": r["author"],
+                "authorId": r["authorId"],
+                "lengthSeconds": r["lengthSeconds"],
+                "published": r["published"],
                 "timeAdded": now,
                 "playlistItemId": str(uuid.uuid4()),
                 "type": "video",
@@ -233,13 +229,24 @@ def write_playlists(path: pathlib.Path, docs: dict[str, dict], order: list[str])
 
 
 def main() -> int:
-    db_arg = sys.argv[1] if len(sys.argv) > 1 else ""
-    dry_run = "--dry-run" in sys.argv
+    args = [a for a in sys.argv[1:]]
+    db_arg = args[0] if args and not args[0].startswith("--") else ""
+    dry_run = "--dry-run" in args
+    limit = DEFAULT_LIMIT
+    only = None
+    if "--limit" in args:
+        limit = int(args[args.index("--limit") + 1])
+    if "--only" in args:
+        only = {n.strip().lower() for n in args[args.index("--only") + 1].split(",")}
+
     db_path = (
         pathlib.Path(db_arg).expanduser()
-        if db_arg and not db_arg.startswith("--")
+        if db_arg
         else pathlib.Path.home() / "Library/Application Support/FreeTube/playlists.db"
     )
+    manifest_path = db_path.parent / "top-charts.json"
+
+    genres = [g for g in GENRES if only is None or g[0].lower() in only]
 
     print("Fetching Invidious instances…")
     instances = get_instances()
@@ -249,46 +256,53 @@ def main() -> int:
     now = int(time.time() * 1000)
     refreshed = time.strftime("%Y-%m-%d %H:%M")
 
+    managed_ids = {g[3] for g in genres}
     results = []
-    for chart in CHARTS:
-        print(f"\n== {chart['name']} ==")
-        videos = build_chart(instances, chart)
-        results.append((chart, videos))
-        for video in videos:
-            print(f"   {video['videoId']}  {video['author']} - {video['title'][:55]}")
+    for name, country, genre_id, pid in genres:
+        print(f"\n== {name} ==")
+        videos = build_genre(instances, name, country, genre_id, limit)
+        results.append((name, pid, videos))
         print(f"   resolved {len(videos)} videos")
 
-    for chart, videos in results:
-        if len(videos) < MIN_SONGS:
-            print(
-                f"WARN  {chart['name']}: only {len(videos)} songs resolved (< {MIN_SONGS}); "
-                "keeping existing playlist."
-            )
-            continue
+    manifest = []
+    for name, pid, videos in results:
+        if len(videos) >= MIN_SONGS:
+            doc = {
+                "_id": pid,
+                "playlistName": f"{MANAGED_PREFIX} {name}",
+                "protected": False,
+                "description": f"Auto-updated top {name} (iTunes Top 100). Refreshed {refreshed}.",
+                "videos": videos,
+                "createdAt": docs.get(pid, {}).get("createdAt", now),
+                "lastUpdatedAt": now,
+            }
+            existing = docs.get(pid)
+            if existing and existing.get("lastPlayedAt"):
+                doc["lastPlayedAt"] = existing["lastPlayedAt"]
+            docs[pid] = doc
+            if pid not in order:
+                order.append(pid)
+            manifest.append({"name": name, "playlistId": pid, "firstVideoId": videos[0]["videoId"]})
+        else:
+            print(f"WARN  {name}: only {len(videos)} songs resolved (< {MIN_SONGS}); keeping existing.")
 
-        doc_id = chart["playlist_id"]
-        existing = docs.get(doc_id)
-        doc = {
-            "_id": doc_id,
-            "playlistName": chart["name"],
-            "protected": False,
-            "description": f"{chart['description']} Refreshed {refreshed}.",
-            "videos": videos,
-            "createdAt": (existing or {}).get("createdAt", now),
-            "lastUpdatedAt": now,
-        }
-        if existing and existing.get("lastPlayedAt"):
-            doc["lastPlayedAt"] = existing["lastPlayedAt"]
-        if doc_id not in docs:
-            order.append(doc_id)
-        docs[doc_id] = doc
+    # Remove stale managed playlists (old "Top Charts —" not in the current set).
+    for doc_id in list(order):
+        doc = docs[doc_id]
+        if doc.get("playlistName", "").startswith(MANAGED_PREFIX) and doc_id not in managed_ids:
+            order.remove(doc_id)
+            del docs[doc_id]
 
     if dry_run:
-        print("\nDry run: playlists.db not modified.")
+        print(f"\nDry run: would write {len(order)} playlists and manifest with {len(manifest)} genres.")
         return 0
 
     write_playlists(db_path, docs, order)
+    manifest_path.write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     print(f"\nWrote {len(order)} playlist records to {db_path}")
+    print(f"Wrote manifest ({len(manifest)} genres) to {manifest_path}")
     return 0
 
 
