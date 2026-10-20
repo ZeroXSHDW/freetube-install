@@ -1,6 +1,6 @@
 # FreeTube macOS installer
 
-Installs the official [FreeTube](https://freetubeapp.io/) macOS release with SHA-256 verification, restores a configuration snapshot, and registers a checksum-verified auto-updater. Companion to [freetube-configs](https://github.com/ZeroXSHDW/freetube-configs-main), which holds the portable settings, playlists, and profiles.
+Installs the official [FreeTube](https://freetubeapp.io/) macOS release with SHA-256 verification, writes a tuned base config, generates the Top Charts music playlists, installs the menu bar app, and registers the auto-updater and login helpers — all from a single command. Companion to [freetube-configs](https://github.com/ZeroXSHDW/freetube-configs-main), which holds the portable settings, curated playlists, and profiles.
 
 ## Why this exists
 
@@ -34,8 +34,9 @@ cd freetube-install
 The default install:
 
 - Places `FreeTube.app` in `~/Applications` (no admin password needed).
-- Restores config from `../freetube-configs-main` if present.
-- Installs the auto-updater (login + every 6 hours).
+- Writes a tuned base config (or restores `../freetube-configs-main` if present).
+- Generates the **18 Top Charts music playlists** immediately.
+- Installs the auto-updater, Top Charts updater, menu bar app, and resume helper.
 - Launches FreeTube.
 
 Options:
@@ -43,8 +44,9 @@ Options:
 ```bash
 ./install.sh --version 0.25.3            # pin a version
 ./install.sh --system                    # install to /Applications (needs sudo; no auto-update)
-./install.sh --no-config                 # skip config restore
+./install.sh --no-config                 # skip config snapshot restore
 ./install.sh --config-dir /path/to/config
+./install.sh --skip-charts               # don't generate Top Charts playlists now
 ./install.sh --menu-bar-now-playing      # show Now Playing in the menu bar
 ./install.sh --no-launch
 ```
@@ -100,6 +102,73 @@ Source: `bar/FreeTubeBar.swift` (compiled with `swiftc`, requires Xcode Command 
 ### Resume on login
 
 When **Resume last genre on login** is on, the last genre you played is recorded to `~/Library/Application Support/FreeTube/last-genre.json`, and a login LaunchAgent re-opens it in FreeTube a few seconds after you sign in. Turn the toggle off in the ♫ menu to disable it.
+
+## How it works
+
+```mermaid
+flowchart LR
+    subgraph Sources["Music data sources"]
+        IT["iTunes Top-100<br/>genre charts"]
+        IV["Invidious<br/>video search"]
+    end
+
+    subgraph Updater["Top Charts updater (LaunchAgent)"]
+        UM["update-top-music.py"]
+    end
+
+    IT --> UM
+    IV --> UM
+    UM --> DB[("FreeTube<br/>playlists.db<br/>18 Top Charts")]
+    UM --> MF[("top-charts.json<br/>genre manifest")]
+
+    subgraph Bar["FreeTubeBar ♫ menu bar (LaunchAgent)"]
+        PV["Now Playing popover<br/>(art, progress, transport)"]
+        GN["Genre / Shuffle menu"]
+        RS["Resume on login"]
+    end
+
+    MF --> Bar
+    DB --> FT["FreeTube.app"]
+
+    GN -- "click genre" --> FT
+    PV -- "transport" --> FT
+    RS --> FT
+
+    FT -- "macOS Now Playing" --> NP["Media keys /<br/>Control Center / AirPods"]
+    NP -- "nowplaying-cli" --> PV
+```
+
+Layered, isometric-style view of the same flow:
+
+```
+                 ┌──────────────────────────────┐
+                 │      FreeTubeBar  ♫          │   menu bar (top of screen)
+                 │  popover · genres · resume   │
+                 └──────────────┬───────────────┘
+                                │ click genre / shuffle / resume-on-login
+        ┌───────────────┐       ▼
+        │ iTunes Top-100│   ┌─────────────────────┐   ┌───────────────┐
+        │  genre charts │──▶│  update-top-music.py│◀──│   Invidious   │
+        └───────────────┘   └──────┬──────────────┘   └───────────────┘
+                                   │ writes
+                     ┌─────────────┴─────────────┐
+                     ▼                           ▼
+        ┌───────────────────────┐   ┌───────────────────────┐
+        │     playlists.db      │   │    top-charts.json    │
+        │  18 "Top Charts"      │   │  genre → video IDs     │
+        └───────────┬───────────┘   └───────────┬───────────┘
+                    ▼                           │ (read by bar)
+        ┌───────────────────────┐               │
+        │     FreeTube.app      │◀──────────────┘
+        │  plays + autoplays    │
+        └───────────┬───────────┘
+                    ▼
+        ┌───────────────────────┐
+        │  macOS Now Playing    │   media keys · Control Center · AirPods
+        └───────────────────────┘
+```
+
+Everything is orchestrated by three LaunchAgents: `autoupdate`, `topmusic`, and `bar` (plus `resume` for login resume).
 
 ## Verify / troubleshoot
 

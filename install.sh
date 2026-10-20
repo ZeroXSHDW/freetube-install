@@ -12,14 +12,16 @@ SYSTEM_INSTALL=0
 RESTORE_CONFIG=1
 LAUNCH=1
 MENU_BAR_NOW_PLAYING=0
+SKIP_CHARTS=0
 CONFIG_DIR=""
 
 usage() {
   cat <<'USAGE'
 Usage: install.sh [options]
 
-Installs the official FreeTube macOS release (SHA-256 verified) and sets up an
-auto-updater (login + every 6 hours).
+Installs the official FreeTube macOS release (SHA-256 verified), sets up the
+auto-updater, generates the Top Charts music playlists, installs the menu bar
+app and resume-on-login helper — all in one.
 
 Options:
   --version VERSION    Pin a version, e.g. 0.25.3 (default: latest)
@@ -27,6 +29,7 @@ Options:
                        then unavailable because replacing needs admin rights
   --no-config          Skip restoring a config snapshot
   --config-dir DIR     Config snapshot to restore (default: ../freetube-configs-main)
+  --skip-charts        Do not generate the Top Charts music playlists now
   --menu-bar-now-playing  Show the macOS Now Playing item in the menu bar
   --no-launch          Do not open FreeTube when finished
   -h, --help           Show this help
@@ -39,6 +42,7 @@ while (($#)); do
     --system) SYSTEM_INSTALL=1; shift ;;
     --no-config) RESTORE_CONFIG=0; shift ;;
     --config-dir) CONFIG_DIR="$2"; shift 2 ;;
+    --skip-charts) SKIP_CHARTS=1; shift ;;
     --menu-bar-now-playing) MENU_BAR_NOW_PLAYING=1; shift ;;
     --no-launch) LAUNCH=0; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -251,6 +255,48 @@ if ((RESTORE_CONFIG)); then
     bash "$CONFIG_DIR/scripts/restore-to-macos.sh" --no-launch
   else
     echo "No config snapshot found at $CONFIG_DIR (use --config-dir, or --no-config to skip)." >&2
+  fi
+fi
+
+# Ensure an optimal base settings.db exists (for fresh installs without a config snapshot).
+SUPPORT_DIR="$HOME/Library/Application Support/FreeTube"
+mkdir -p "$SUPPORT_DIR"
+if [[ ! -s "$SUPPORT_DIR/settings.db" ]]; then
+  echo "Writing default playback settings…"
+  python3 - "$SUPPORT_DIR/settings.db" <<'PY'
+import json, sys
+settings = {
+    "backendPreference": "local",
+    "backendFallback": True,
+    "useRssFeeds": True,
+    "autoplayPlaylists": True,
+    "autoplayVideos": True,
+    "playNextVideo": True,
+    "defaultVideoFormat": "dash",
+    "defaultQuality": "720",
+    "defaultInterval": 0,
+    "defaultAutoplayInterruptionIntervalHours": 12,
+    "landingPage": "userPlaylists",
+    "expandSideBar": True,
+    "checkForUpdates": True,
+    "defaultProfile": "allChannels",
+    "rememberHistory": True,
+    "userPlaylistsSortBy": "latest_played_first",
+}
+with open(sys.argv[1], "w", encoding="utf-8") as f:
+    for k, v in settings.items():
+        f.write(json.dumps({"_id": k, "value": v}, separators=(",", ":")) + "\n")
+PY
+fi
+
+# Generate the Top Charts music playlists now (FreeTube is still closed here).
+if ((!SKIP_CHARTS)); then
+  if pgrep -f "FreeTube.app/Contents/MacOS/FreeTube" >/dev/null 2>&1; then
+    echo "FreeTube is already running; skipping Top Charts generation (it will refresh on schedule)."
+  elif [[ -x "$SCRIPTS_DEST/update-top-music.sh" ]]; then
+    [[ -f "$SUPPORT_DIR/playlists.db" ]] || : > "$SUPPORT_DIR/playlists.db"
+    echo "Generating Top Charts music playlists (this takes a minute)…"
+    "$SCRIPTS_DEST/update-top-music.sh" || echo "Top Charts generation failed (will retry on schedule)."
   fi
 fi
 
