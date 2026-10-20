@@ -1,0 +1,12 @@
+# Release binaries are never committed (GitHub's 100 MB limit).
+*.dmg
+*.7z
+*.zip
+*.AppImage
+*.deb
+*.rpm
+*.exe
+
+.DS_Store
+*.log
+*.bak
