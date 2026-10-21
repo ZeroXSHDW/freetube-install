@@ -14,6 +14,32 @@ An orbit/zoom 3D scene of the whole system (menu bar, 18 genre nodes, Radio Mix,
         title="FreeTube macOS Music System" loading="lazy"></iframe>
 ```
 
+## Native macOS app (Swift)
+
+The installer scripts are now wrapped in a full **SwiftUI macOS application** — `FreeTubeInstaller` — a single `.app` that replaces the standalone scripts and menu bar app:
+
+| Module | What it does |
+| --- | --- |
+| **Install / Update** | Downloads the official DMG, verifies SHA-256 + code signature, removes quarantine, installs to `~/Applications`. |
+| **Now Playing** | Drives FreeTube via `freetube://` deep links + `nowplaying-cli`, with an **endless genre queue** and automatic track advance. |
+| **SponsorBlock** | Auto-skips sponsor / self-promo / intro / outro / filler segments (sponsor.ajay.app) while FreeTube plays. |
+| **Library** | Reads FreeTube's own `history.db` / `subscriptions.db` / `favorites.json` / `watchLater.json` and stays in sync with FreeTubeBar. |
+| **Extras** | Sleep-aware pause/resume, LaunchAgent toggles, snapshot backups + restore, log cleanup, and a one-click **Doctor**. |
+| **Menu bar ♫** | Native `NSStatusItem` popover with Now Playing, favorites, and quick genre launcher. |
+
+### Build
+
+```bash
+cd freetube-install
+swift build                                   # build from source
+./scripts/build-app.sh --install              # assemble + sign FreeTubeInstaller.app → ~/Applications
+open ~/Applications/FreeTubeInstaller.app
+```
+
+> Requires Swift 5.9+ (Xcode Command Line Tools). The app uses no third-party dependencies — pure Swift + system frameworks.
+
+Source lives under `Sources/FreeTubeApp/` (Models, Views, ViewModels, Services, Helpers).
+
 ## Why this exists
 
 FreeTube's macOS builds are **ad-hoc signed, not notarized**, so the Homebrew cask is disabled and Gatekeeper blocks the app by default. This installer:
@@ -223,21 +249,24 @@ Everything is orchestrated by three LaunchAgents: `autoupdate`, `topmusic`, and 
 ## Layout
 
 ```text
-install.sh                             Main installer
+Package.swift                           Swift package manifest
+Sources/FreeTubeApp/                    Native SwiftUI app (Models/Views/ViewModels/Services/Helpers)
+scripts/build-app.sh                    Assemble + sign FreeTubeInstaller.app
+install.sh                              Main installer
 uninstall.sh
 verify.sh
-bar/FreeTubeBar.swift                  Menu bar app source
-bar/audiodevice.swift                  Default audio output helper (CoreAudio)
-scripts/freetube-autoupdate.sh         Checksum-verified auto-updater
-scripts/update-top-music.py            Top Charts playlist generator (18 genres)
-scripts/update-top-music.sh            Top Charts wrapper
-scripts/play-genre.sh                  Play a genre from the CLI
-scripts/resume-last.sh                 Resume last genre on login
-scripts/play-favorites.sh              Flush + play ♥ favorites
-scripts/play-watch-later.sh            Flush + play 🕓 watch later
-scripts/audio-pause.sh                 AirPods auto-pause watcher
-scripts/freetube-doctor.sh             Diagnostics
-launchd/                               LaunchAgent templates
+bar/FreeTubeBar.swift                   Menu bar app source
+bar/audiodevice.swift                   Default audio output helper (CoreAudio)
+scripts/freetube-autoupdate.sh          Checksum-verified auto-updater
+scripts/update-top-music.py             Top Charts playlist generator (18 genres)
+scripts/update-top-music.sh             Top Charts wrapper
+scripts/play-genre.sh                   Play a genre from the CLI
+scripts/resume-last.sh                  Resume last genre on login
+scripts/play-favorites.sh               Flush + play ♥ favorites
+scripts/play-watch-later.sh             Flush + play 🕓 watch later
+scripts/audio-pause.sh                  AirPods auto-pause watcher
+scripts/freetube-doctor.sh              Diagnostics
+launchd/                                LaunchAgent templates
 docs/
 ```
 

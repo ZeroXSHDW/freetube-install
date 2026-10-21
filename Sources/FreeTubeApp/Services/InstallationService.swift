@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 
 enum InstallationError: Error, LocalizedError {
     case releaseNotFound
@@ -41,7 +42,7 @@ final class InstallationService: ObservableObject {
     static let shared = InstallationService()
 
     private let apiURL = "https://api.github.com/repos/FreeTubeApp/FreeTube/releases"
-    private let appDir: URL
+    let appDir: URL
     private let supportDir: URL
 
     @Published var isInstalling = false
@@ -141,8 +142,12 @@ final class InstallationService: ObservableObject {
 
         // Verify checksum
         let dmgsURL = FileManager.default.temporaryDirectory.appendingPathComponent(release.assetName)
-        try SHA256Helper.verify(fileURL: dmgsURL, expectedDigest: release.digest)
-        log("Checksum verified.")
+        if !release.digest.isEmpty {
+            try SHA256Helper.verify(fileURL: dmgsURL, expectedDigest: release.digest)
+            log("Checksum verified.")
+        } else {
+            log("No published digest for this release; relying on code-signature verification.")
+        }
 
         // Mount DMG
         let mountPoint = FileManager.default.temporaryDirectory.appendingPathComponent("freetube-mount")
@@ -231,7 +236,7 @@ final class InstallationService: ObservableObject {
 
     // MARK: - Helpers
 
-    private func fetchLatestRelease() async throws -> ReleaseAsset {
+    func fetchLatestRelease() async throws -> ReleaseAsset {
         guard let url = URL(string: "\(apiURL)?per_page=1") else {
             throw InstallationError.releaseNotFound
         }
@@ -242,20 +247,11 @@ final class InstallationService: ObservableObject {
             throw InstallationError.releaseNotFound
         }
 
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let releases = json["assets"] as? [[String: Any]] ?? json as? [[String: Any]] else {
-            // GitHub returns array directly for per_page=1
-            if let releases = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
-               let first = releases.first {
-                return try parseAsset(from: first)
-            }
+        guard let releases = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+              let first = releases.first else {
             throw InstallationError.releaseNotFound
         }
-
-        if let first = releases.first {
-            return try parseAsset(from: first)
-        }
-        throw InstallationError.releaseNotFound
+        return try parseAsset(from: first)
     }
 
     private func parseAsset(from json: [String: Any]) throws -> ReleaseAsset {
@@ -290,7 +286,7 @@ final class InstallationService: ObservableObject {
 
     private func quitRunningFreeTube() {
         let script = "tell application \"FreeTube\" to quit"
-        try? ShellHelper.run("/usr/bin/osascript", arguments: ["-e", script])
+        _ = try? ShellHelper.run("/usr/bin/osascript", arguments: ["-e", script])
 
         // Wait up to 20 seconds
         for _ in 0..<40 {

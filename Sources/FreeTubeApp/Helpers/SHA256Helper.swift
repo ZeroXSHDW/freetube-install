@@ -27,7 +27,7 @@ struct SHA256Helper {
 
         do {
             let handle = try FileHandle(forReadingFrom: fileURL)
-            defer { handle.close() }
+            defer { try? handle.close() }
 
             var hasher = SHA256()
             while true {

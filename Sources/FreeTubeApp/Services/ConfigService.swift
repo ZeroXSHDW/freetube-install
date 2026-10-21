@@ -15,7 +15,7 @@ final class ConfigService: ObservableObject {
         loadConfig()
     }
 
-    private let settingsURL: URL {
+    private var settingsURL: URL {
         supportDir.appendingPathComponent("settings.db")
     }
 
@@ -28,11 +28,11 @@ final class ConfigService: ObservableObject {
         }
 
         do {
-            let data = try Data(contentsOf: settingsURL)
+            let text = try String(contentsOf: settingsURL, encoding: .utf8)
             var settings: [String: Any] = [:]
-            for line in data.split(separator: "\n", omittingEmptySubsequences: true) {
-                let line = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                if let obj = try? JSONSerialization.jsonObject(with: Data(line)) as? [String: Any],
+            for rawLine in text.split(separator: "\n", omittingEmptySubsequences: true) {
+                let line = String(rawLine).trimmingCharacters(in: .whitespacesAndNewlines)
+                if let obj = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
                    let key = obj["_id"] as? String {
                     settings[key] = obj["value"]
                 }

@@ -11,7 +11,7 @@ final class LaunchAgentService: ObservableObject {
     init() {
         self.launchDir = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent("Library/LaunchAgents")
-        self.uid = String(ProcessInfo.processInfo.userIdentifier)
+        self.uid = String(getuid())
         refresh()
     }
 

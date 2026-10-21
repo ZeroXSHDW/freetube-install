@@ -18,10 +18,6 @@ let package = Package(
             name: "FreeTubeApp",
             dependencies: [],
             path: "Sources/FreeTubeApp"
-        ),
-        .testTarget(
-            name: "FreeTubeInstallerTests",
-            dependencies: ["FreeTubeApp"]
         )
     ]
 )

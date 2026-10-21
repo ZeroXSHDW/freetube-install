@@ -18,7 +18,7 @@ enum ShellError: Error, LocalizedError {
 }
 
 struct ShellHelper {
-    /// Runs a shell command and returns its stdout.
+    /// Runs an executable by absolute path and returns its stdout.
     @discardableResult
     static func run(_ command: String, arguments: [String] = [],
                     environment: [String: String] = [:]) throws -> String {
@@ -60,7 +60,35 @@ struct ShellHelper {
         return output.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// Runs a command asynchronously with a callback for output lines.
+    /// Resolves a command name (or keeps an absolute path) to an absolute
+    /// executable path, scanning Homebrew and standard directories first.
+    static func resolveExecutable(_ name: String) -> String? {
+        if name.contains("/") {
+            return FileManager.default.isExecutableFile(atPath: name) ? name : nil
+        }
+        let dirs = ["/opt/homebrew/bin", "/usr/local/bin", "/opt/local/bin",
+                    "/usr/bin", "/bin", "/usr/sbin", "/sbin"]
+        for dir in dirs {
+            let path = "\(dir)/\(name)"
+            if FileManager.default.isExecutableFile(atPath: path) { return path }
+        }
+        if let which = try? run("/usr/bin/which", arguments: [name]),
+           !which.isEmpty, FileManager.default.isExecutableFile(atPath: which) {
+            return which
+        }
+        return nil
+    }
+
+    /// Runs a command by name, resolving it against standard directories.
+    @discardableResult
+    static func runNamed(_ name: String, arguments: [String] = []) throws -> String {
+        guard let path = resolveExecutable(name) else {
+            throw ShellError.commandNotFound(name)
+        }
+        return try run(path, arguments: arguments)
+    }
+
+    /// Runs a command asynchronously with callbacks for completion.
     static func runAsync(_ command: String, arguments: [String] = [],
                          onOutput: @escaping (String) -> Void,
                          onCompletion: @escaping (Int32) -> Void) {
@@ -90,11 +118,11 @@ struct ShellHelper {
     }
 
     static func commandExists(_ command: String) -> Bool {
-        return FileManager.default.isExecutableFile(atPath: command)
-            || run("which", arguments: [command]) != nil
+        resolveExecutable(command) != nil
     }
 
     static func runOptional(_ command: String, arguments: [String] = []) -> String? {
-        try? run(command, arguments: arguments)
+        guard let path = resolveExecutable(command) else { return nil }
+        return try? run(path, arguments: arguments)
     }
 }

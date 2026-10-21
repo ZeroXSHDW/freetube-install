@@ -11,6 +11,13 @@ final class GenresViewModel: ObservableObject {
 
     func playGenre(_ genre: Genre) {
         selectedGenre = genre
+        // Prefer the deep link so FreeTube itself handles the playback.
+        if let playlist = PlaylistService.shared.playlists.first(where: {
+            $0.playlistName == "Top Charts — \(genre.name)"
+        }), let first = playlist.videos.first {
+            DeepLinkService.shared.openVideo(first.videoId)
+            return
+        }
         if let url = URL(string: "https://www.youtube.com/watch?v=\(genre.firstVideoId)&list=\(genre.playlistId)") {
             playURL = url
             showingPlayAlert = true

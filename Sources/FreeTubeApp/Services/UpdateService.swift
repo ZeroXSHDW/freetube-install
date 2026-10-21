@@ -24,7 +24,7 @@ final class UpdateService: ObservableObject {
                     }
                     self.isChecking = false
                     if showUI {
-                        print("Update check: latest \(release.version), current \(current ?? "none"), available: \(self.updateAvailable)")
+                        print("Update check: latest \(release.version), current \(installation.currentVersion ?? "none"), available: \(self.updateAvailable)")
                     }
                 }
             } catch {

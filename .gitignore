@@ -1,14 +1,8 @@
-# Release binaries are never committed (GitHub's 100 MB limit).
-*.dmg
-*.7z
-*.zip
-*.AppImage
-*.deb
-*.rpm
-*.exe
-
+.build/
+dist/
+.swiftpm/
+*.xcodeproj
 .DS_Store
-*.log
-*.bak
-*.pyc
+*.dmg
 __pycache__/
+*.pyc

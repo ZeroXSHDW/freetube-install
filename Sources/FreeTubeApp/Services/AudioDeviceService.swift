@@ -115,7 +115,7 @@ final class AudioDeviceService: ObservableObject {
 
         previousDeviceName = currentName
 
-        await MainActor.run {
+        Task { @MainActor in
             self.currentDevice = current
             self.lastEvent = "\(previous) -> \(currentName)"
         }
@@ -129,11 +129,11 @@ final class AudioDeviceService: ObservableObject {
     }
 
     private func pauseFreeTube() {
-        try? ShellHelper.run(nowPlayingCLI, arguments: ["pause"])
+        _ = try? ShellHelper.run(nowPlayingCLI, arguments: ["pause"])
     }
 
     private func resumeFreeTube() {
-        try? ShellHelper.run(nowPlayingCLI, arguments: ["play"])
+        _ = try? ShellHelper.run(nowPlayingCLI, arguments: ["play"])
     }
 
     private func savePauseState(_ paused: Bool) {

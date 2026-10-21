@@ -22,8 +22,8 @@ struct CodeSignHelper {
             throw CodeSignError.notSigned
         }
 
-        let output = try ShellHelper.run("/usr/bin/codesign",
-                                         arguments: ["--verify", "--deep", "--strict", appURL.path])
+        _ = try ShellHelper.run("/usr/bin/codesign",
+                                arguments: ["--verify", "--deep", "--strict", appURL.path])
         // codesign --verify returns empty stdout on success
         return true
     }

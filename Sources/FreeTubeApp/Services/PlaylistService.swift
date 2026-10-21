@@ -38,13 +38,13 @@ final class PlaylistService: ObservableObject {
         }
 
         do {
-            let data = try Data(contentsOf: playlistsDB)
+            let text = try String(contentsOf: playlistsDB, encoding: .utf8)
             var docs: [String: [String: Any]] = [:]
             var order: [String] = []
 
-            for line in data.split(separator: "\n", omittingEmptySubsequences: true) {
-                let line = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard let obj = try? JSONSerialization.jsonObject(with: Data(line)) as? [String: Any],
+            for rawLine in text.split(separator: "\n", omittingEmptySubsequences: true) {
+                let line = String(rawLine).trimmingCharacters(in: .whitespacesAndNewlines)
+                guard let obj = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
                       let id = obj["_id"] as? String else { continue }
                 if obj["$$deleted"] as? Bool == true {
                     docs.removeValue(forKey: id)
@@ -160,15 +160,16 @@ final class PlaylistService: ObservableObject {
                 }
 
                 // Write playlists to DB
-                try writePlaylists(updatedPlaylists)
+                let completed = updatedPlaylists
+                try writePlaylists(completed)
 
                 // Update manifest
-                try updateManifest(playlists: updatedPlaylists)
+                try updateManifest(playlists: completed)
 
                 await MainActor.run {
-                    self.playlists = updatedPlaylists
+                    self.playlists = completed
                     self.isRefreshing = false
-                    self.log("Top Charts refresh complete: \(updatedPlaylists.count) playlists updated.")
+                    self.log("Top Charts refresh complete: \(completed.count) playlists updated.")
                 }
             } catch {
                 await MainActor.run {
@@ -187,15 +188,17 @@ final class PlaylistService: ObservableObject {
             return ["https://invidious.f5.si"]
         }
         let (data, _) = try await URLSession.shared.data(from: url)
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [[Any]] else {
             return ["https://invidious.f5.si"]
         }
         var instances: [String] = []
         for item in json.prefix(5) {
-            if let info = item[1] as? [String: Any], info["api"] as? Bool == true,
-               let uri = item[0] as? String, !uri.contains("onion") && !uri.contains("i2p") {
-                instances.append(uri.replacingOccurrences(of: "/$", with: ""))
-            }
+            guard item.count >= 2,
+                  let uri = item[0] as? String,
+                  let info = item[1] as? [String: Any],
+                  info["api"] as? Bool == true,
+                  !uri.contains("onion") && !uri.contains("i2p") else { continue }
+            instances.append(uri.replacingOccurrences(of: "/$", with: "", options: .regularExpression))
         }
         return instances.isEmpty ? ["https://invidious.f5.si"] : instances
     }
