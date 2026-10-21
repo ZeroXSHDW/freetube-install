@@ -109,6 +109,52 @@
   .controls { position:fixed; left:20px; bottom:20px; color:var(--muted); font-size:11px; z-index:5; letter-spacing:.4px; text-transform:uppercase; }
   .status-badge { position:fixed; right:20px; bottom:20px; color:#79c0ff; font-size:11px; border:1px solid rgba(121,192,255,0.22); background:rgba(3,6,14,0.85); padding:4px 10px; border-radius:12px; backdrop-filter:blur(8px); box-shadow:0 6px 20px rgba(0,0,0,0.35); z-index:5; display:flex; align-items:center; gap:5px; letter-spacing:.4px; }
   .status-badge svg { width:11px; height:11px; fill:currentColor; flex-shrink:0; }
+
+  /* ---- Mobile / responsive ---- */
+  @media (max-width: 768px) {
+    #menu-bar { height: 22px; padding: 0 12px; font-size: 10px; }
+    #menu-bar .apple { font-size: 11px; }
+    #menu-bar .center { gap: 6px; font-size: 10px; }
+    #menu-bar .freetube { padding: 1px 6px; font-size: 10px; gap: 4px; }
+    #menu-bar .status { gap: 8px; }
+    #menu-bar .status span { font-size: 10px; }
+
+    #popover { width: 90vw; left: 5vw; top: 26px; transform: none; padding: 10px 10px 8px; }
+    #popover.show { transform: translateY(4px); }
+    #popover::after { left: 20px; transform: none; }
+
+    .art { width: 40px; height: 40px; font-size: 20px; }
+    .np-title { font-size: 12px; }
+    .np-artist { font-size: 10px; }
+    .np-controls { gap: 10px; }
+    .ctrl-btn { width: 32px; height: 32px; font-size: 12px; }
+
+    .cta { bottom: 22px; gap: 8px; padding: 0 12px; }
+    .cta-btn { font-size: 12px; padding: 8px 16px; }
+
+    .controls { left: 12px; bottom: 12px; font-size: 10px; }
+    .status-badge { right: 12px; bottom: 12px; font-size: 10px; padding: 3px 8px; }
+
+    .overlay { top: 14px; padding: 0 12px; }
+    .overlay h1 { font-size: clamp(16px, 8vw, 28px); }
+    .overlay p { font-size: clamp(11px, 2.5vw, 14px); margin-bottom: 10px; }
+    .tags { gap: 6px; margin-top: 8px; }
+    .tag { font-size: 9.5px; padding: 3px 10px; }
+    .cta-row { gap: 8px; margin-top: 6px; }
+    .btn { font-size: 12px; padding: 9px 18px; gap: 6px; }
+    .btn svg { width: 15px; height: 15px; }
+
+    #genre-hud { top: 48px; gap: 6px; }
+    .genre-chip { font-size: 9px; padding: 2.5px 10px; }
+    #status-hud { top: 44px; right: 12px; font-size: 10px; line-height: 1.3; }
+  }
+
+  /* Touch-friendly */
+  @media (hover: none) {
+    #menu-bar .freetube:active { background: rgba(251,191,36,0.22); transform: translateY(-1px); }
+    .ctrl-btn:active { transform: scale(0.92); }
+    .btn:active { transform: scale(0.96); }
+  }
 </style>
 </head>
 <body>
