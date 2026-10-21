@@ -3,85 +3,31 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>FreeTube — macOS Music System</title>
+<title>FreeTube · macOS Music System</title>
+<meta property="og:title" content="FreeTube · macOS Music System" />
+<meta property="og:description" content="One command → auto-updating FreeTube, 18 top-charts genres, a ♫ menu bar, Now Playing, favorites & AirPods auto-pause." />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://zeroxshdw.github.io/freetube-install/og.png" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23fefefe' /><path d='M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z' fill='%230f192f' /></svg>"/>
 <style>
-  :root {
-    --bg: #0b1020;
-    --fg: #eaf0ff;
-    --muted: #8b96b8;
-    --accent: #f59e0b;
-  }
+  :root { --bg: #0b1020; }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; overflow: hidden; }
-  body {
-    font-family: -apple-system, "Segoe UI", "Inter", system-ui, sans-serif;
-    background:
-      radial-gradient(1200px 800px at 50% 30%, #1b2547 0%, #0b1020 60%, #070a14 100%);
-    color: var(--fg);
-  }
-  #scene { position: fixed; inset: 0; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: radial-gradient(1200px 800px at 50% 30%, #1b2547 0%, #0b1020 60%, #070a14 100%); font-family: -apple-system, 'Segoe UI', Inter, sans-serif; color: #eaf0ff; }
+  #scene { position: fixed; inset: 0; z-index: 0; }
+  
+  .overlay { position: fixed; left: 0; right: 0; top: 24px; text-align: center; pointer-events: none; padding: 0 20px; z-index: 10; }
+  .overlay h1 { margin: 0; font-size: clamp(20px, 7vw, 44px); font-weight: 900; background: linear-gradient(90deg, #f59e0b, #ec4899, #3b82f6, #ef4444); -webkit-background-clip: text; color: transparent; letter-spacing: -0.5px; }
+  .overlay p { margin: 8px 0 2px; color: #8b96b8; font-size: clamp(13px, 2.2vw, 17px); line-height: 1.5; }
+  .tags { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+  .tag { font-size: 11px; color: #cdd6f4; border: 1px solid rgba(205,214,244,0.24); border-radius: 999px; padding: 4px 12px; background: rgba(255,255,255,0.06); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
 
-  .overlay {
-    position: fixed;
-    left: 0; right: 0;
-    top: 28px;
-    text-align: center;
-    pointer-events: none;
-    padding: 0 20px;
-  }
-  .overlay h1 {
-    margin: 0;
-    font-size: clamp(24px, 4vw, 40px);
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    background: linear-gradient(90deg, #f59e0b, #ec4899, #22d3ee);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .overlay p {
-    margin: 6px 0 0;
-    color: var(--muted);
-    font-size: clamp(13px, 2vw, 16px);
-  }
-  .overlay .tags { margin-top: 10px; }
-  .overlay .tag {
-    display: inline-block;
-    font-size: 11px;
-    letter-spacing: 0.4px;
-    color: #cdd6f4;
-    border: 1px solid rgba(205,214,244,0.25);
-    border-radius: 999px;
-    padding: 4px 12px;
-    margin: 3px 3px;
-    background: rgba(255,255,255,0.04);
-  }
+  .controls { position: fixed; left: 24px; bottom: 24px; color: #8b96b8; font-size: 13px; z-index: 5; letter-spacing: .5px; text-transform: uppercase; }
+  
+  .btn { position: fixed; right: 24px; bottom: 24px; pointer-events: auto; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; background: linear-gradient(135deg, #fbbf24, #d97736); border-radius: 14px; padding: 12px 24px; color: #0b1020; font-weight: 600; font-size: 14px; box-shadow: 0 10px 32px rgba(251,191,36,0.4); z-index: 10; }
+  .btn svg { width: 18px; height: 18px; fill: currentColor; flex-shrink: 0; }
 
-  .controls {
-    position: fixed;
-    left: 20px; bottom: 18px;
-    color: var(--muted);
-    font-size: 12px;
-    pointer-events: none;
-  }
-  .btn {
-    position: fixed;
-    right: 20px; bottom: 18px;
-    pointer-events: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 600;
-    color: #0b1020;
-    background: var(--accent);
-    border-radius: 10px;
-    padding: 10px 16px;
-    box-shadow: 0 8px 24px rgba(245,158,11,0.35);
-    transition: transform .12s ease, box-shadow .12s ease;
-  }
-  .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(245,158,11,0.45); }
+  .status-badge { position: fixed; left: 48px; bottom: 22px; color: #79c0ff; font-size: 12px; border: 1px solid rgba(121,192,255,0.22); background: rgba(3,6,14,0.85); padding: 6px 14px; border-radius: 16px; backdrop-filter: blur(8px); box-shadow: 0 8px 24px rgba(0,0,0,0.35); z-index: 5; display: flex; align-items: center; gap: 6px; letter-spacing: .6px; }
+  .status-badge svg { width: 12px; height: 12px; fill: currentColor; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -89,197 +35,163 @@
 
   <div class="overlay">
     <h1>FreeTube · macOS Music System</h1>
-    <p>One command → auto-updating FreeTube, 18 top-charts genres, a ♫ menu bar, Now Playing, favorites &amp; AirPods auto-pause.</p>
+    <p>The official DMG installer, native ♫ menu bar app with auto-updates, 18 top-chart genres that refresh automatically, Now Playing integration, ♥ favorites sync, 🕓 Watch Later, and AirPods auto-pause — all orchestrated from a single command.</p>
     <div class="tags">
-      <span class="tag">♫ Menu bar app</span>
-      <span class="tag">18 auto-refreshed genres</span>
-      <span class="tag">Cross-genre Radio Mix</span>
-      <span class="tag">Now Playing + media keys</span>
-      <span class="tag">♥ Favorites / 🕓 Watch Later</span>
-      <span class="tag">AirPods auto-pause</span>
+      <span class="tag">♫ Menu Bar App</span>
+      <span class="tag">18 Genres · Auto-Refreshed</span>
+      <span class="tag">Cross-Genre Radio Mix</span>
+      <span class="tag">♥ & 🕓 Sync</span>
+      <span class="tag">AirPods Auto-Pause</span>
     </div>
   </div>
 
-  <div class="controls">Drag to rotate · Scroll to zoom</div>
-  <a class="btn" href="https://github.com/ZeroXSHDW/freetube-install" target="_blank" rel="noopener">
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-    View on GitHub
+  <div class="status-badge" title="FreeTube v0.25.3 — Live">
+    <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 6a6 6 0 1 1-6 6a6 6 0 0 1 6-6Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+    FreeTube v0.25.3 Live
+  </div>
+
+  <a class="btn" href="https://github.com/ZeroXSHDW/freetube-install" target="_blank" rel="noopener noreferrer">
+    <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    View Documentation on GitHub
   </a>
 
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-  }
-}
-</script>
+  <div class="controls">Drag to rotate · Scroll to zoom</div>
+
 <script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/OrbitControls.js';
 
 const canvas = document.getElementById('scene');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 200);
-camera.position.set(0, 9, 22);
+scene.background = new THREE.Color(0x0b1020);
+scene.fog = new THREE.FogExp2(0x0b1020, 0.035);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 300);
+camera.position.set(3, 6, 28);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
-controls.dampingFactor = 0.06;
 controls.autoRotate = true;
-controls.autoRotateSpeed = 0.6;
+controls.autoRotateSpeed = 1.2;
 controls.minDistance = 8;
 controls.maxDistance = 45;
-controls.maxPolarAngle = Math.PI * 0.75;
+controls.maxPolarAngle = Math.PI / 3;
 
-// Lights
-scene.add(new THREE.AmbientLight(0x8899cc, 1.6));
-const key = new THREE.PointLight(0xffffff, 40, 60);
-key.position.set(8, 12, 8);
-scene.add(key);
-const rim = new THREE.PointLight(0x22d3ee, 30, 50);
-rim.position.set(-10, -4, -6);
-scene.add(rim);
+const GENRES = ['Pop', 'Hip-Hop/Rap', 'Rock', 'Country', 'R&B/Soul', 'Electronic', 'Dance', 'Alternative', 'Latin', 'Reggae', 'Jazz', 'Classical', 'Blues', 'Singer/Songwriter', 'World', 'Soundtrack', 'Russian Rap', 'Russian Pop'];
 
-const GENRES = ['Pop','Hip-Hop/Rap','Rock','Country','R&B/Soul','Electronic','Dance',
-  'Alternative','Latin','Reggae','Jazz','Classical','Blues','Singer/Songwriter',
-  'World','Soundtrack','Russian Rap','Russian Pop'];
-
-function labelSprite(text, color = '#ffffff', scale = 3.4) {
+function makeTextSprite(text, color = '#ffffff') {
   const c = document.createElement('canvas');
   const ctx = c.getContext('2d');
-  c.width = 512; c.height = 160;
-  ctx.font = '600 52px -apple-system, Segoe UI, system-ui, sans-serif';
+  c.width = 460; c.height = 140;
+  ctx.font = '600 52px -apple-system, Segoe UI, sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillStyle = color;
-  ctx.fillText(text, 256, 80);
+  ctx.fillText(text, c.width / 2, c.height / 2);
   const tex = new THREE.CanvasTexture(c);
-  tex.minFilter = THREE.LinearFilter;
-  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.85, depthWrite: false });
   const s = new THREE.Sprite(mat);
-  s.scale.set(scale, scale * (160 / 512), 1);
+  s.scale.set(4.5, 1.4, 1);
   return s;
 }
 
-// Central core
-const coreGroup = new THREE.Group();
-const core = new THREE.Mesh(
-  new THREE.TorusKnotGeometry(1.4, 0.42, 160, 24),
-  new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9, roughness: 0.25, emissive: 0x7c3aed, emissiveIntensity: 0.55 })
-);
-coreGroup.add(core);
-const wire = new THREE.Mesh(
-  new THREE.TorusKnotGeometry(1.5, 0.48, 96, 16),
-  new THREE.MeshBasicMaterial({ color: 0xa78bfa, wireframe: true, transparent: true, opacity: 0.28 })
-);
-coreGroup.add(wire);
-coreGroup.position.y = 0.5;
-scene.add(coreGroup);
-
-const coreLabel = labelSprite('FreeTube', '#e9d5ff', 4.2);
-coreLabel.position.set(0, -2.6, 0);
-scene.add(coreLabel);
-
-// Menu bar (♫) — top ribbon
-const barGroup = new THREE.Group();
-const bar = new THREE.Mesh(
-  new THREE.BoxGeometry(22, 1.1, 1.6),
-  new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.6, roughness: 0.35, emissive: 0xf59e0b, emissiveIntensity: 0.25 })
-);
-barGroup.add(bar);
-const barLabel = labelSprite('♫ FreeTubeBar', '#fbbf24', 4.6);
-barLabel.position.y = 1.4;
-barGroup.add(barLabel);
-barGroup.position.set(0, 10.5, 0);
-scene.add(barGroup);
-
-// Now Playing ring (bottom)
-const npRing = new THREE.Mesh(
-  new THREE.TorusGeometry(5.6, 0.18, 16, 90),
-  new THREE.MeshStandardMaterial({ color: 0x34d399, metalness: 0.4, roughness: 0.3, emissive: 0x10b981, emissiveIntensity: 0.7 })
-);
-npRing.rotation.x = Math.PI / 2;
-npRing.position.y = -7.2;
-scene.add(npRing);
-const npLabel = labelSprite('macOS Now Playing', '#6ee7b7', 3.8);
-npLabel.position.set(0, -8.4, 0);
-scene.add(npLabel);
-
-// Genre nodes ring
-const ring = new THREE.Group();
-const nodeGeom = new THREE.BoxGeometry(0.55, 0.55, 0.55);
-GENRES.forEach((name, i) => {
-  const angle = (i / GENRES.length) * Math.PI * 2;
-  const radius = 7.4;
-  const x = Math.cos(angle) * radius;
-  const z = Math.sin(angle) * radius;
-  const y = Math.sin(angle * 3) * 1.1;
-
-  const color = new THREE.Color().setHSL(i / GENRES.length, 0.75, 0.6);
-  const node = new THREE.Mesh(nodeGeom, new THREE.MeshStandardMaterial({
-    color, metalness: 0.3, roughness: 0.35, emissive: color, emissiveIntensity: 0.35
-  }));
-  node.position.set(x, y, z);
-  ring.add(node);
-
-  const lbl = labelSprite(name, '#eaf0ff', 3.0);
-  lbl.position.set(x, y + 1.0, z);
-  ring.add(lbl);
-});
-scene.add(ring);
-
-// Starfield
-const starsGeom = new THREE.BufferGeometry();
-const starsCount = 900;
-const positions = new Float32Array(starsCount * 3);
-for (let i = 0; i < starsCount; i++) {
-  positions[i*3]   = (Math.random() - 0.5) * 90;
-  positions[i*3+1] = (Math.random() - 0.5) * 60;
-  positions[i*3+2] = (Math.random() - 0.5) * 90;
+function createCore() {
+  const group = new THREE.Group();
+  const core = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(4.8, 10),
+    new THREE.MeshStandardMaterial({ color: 0x0d9488, metalness: 0.85, roughness: 0.2, emissive: 0x0ea5e9, emissiveIntensity: 0.7 })
+  ); group.add(core);
+  const wire = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(4.95, 10),
+    new THREE.LineBasicMaterial({ color: 0xff8c79 })
+  ); group.add(wire);
+  const inner = new THREE.Mesh(new THREE.IcosahedronGeometry(3.3), new THREE.MeshStandardMaterial({ color: 0xeef9ff })); group.add(inner);
+  const torus = new THREE.Mesh(new THREE.TorusGeometry(5.8, 0.52, 140, 44), new THREE.MeshBasicMaterial({ color: 0x7835fd, wireframe: true }));
+  group.add(torus);
+  return group;
 }
-starsGeom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-const stars = new THREE.Points(starsGeom, new THREE.PointsMaterial({ color: 0x9aa7d0, size: 0.08, transparent: true, opacity: 0.7 }));
-scene.add(stars);
 
-// Connecting lines core -> nodes
-const lineGroup = new THREE.Group();
-const lineMat = new THREE.LineBasicMaterial({ color: 0x55608a, transparent: true, opacity: 0.35 });
-GENRES.forEach((_, i) => {
-  const angle = (i / GENRES.length) * Math.PI * 2;
-  const radius = 7.4;
-  const x = Math.cos(angle) * radius;
-  const z = Math.sin(angle) * radius;
-  const y = Math.sin(angle * 3) * 1.1;
-  const geom = new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(0, 0.5, 0),
-    new THREE.Vector3(x, y, z)
-  ]);
-  lineGroup.add(new THREE.Line(geom, lineMat));
-});
-scene.add(lineGroup);
+function createGenreRing() {
+  const ring = new THREE.Group();
+  GENRES.forEach((name, i) => {
+    const angle = (i / GENRES.length) * Math.PI * 2;
+    const x = Math.cos(angle) * 7.3; const z = Math.sin(angle) * 7.3; const y = Math.sin(angle * 4) * 2.2;
+    const color = new THREE.Color().setHSL(i / GENRES.length, 0.88, 0.6);
+    const node = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.82, 0.82), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.4 }));
+    node.position.set(x, y, z);
+    ring.add(node);
+    const label = makeTextSprite(name);
+    label.position.set(x, y + 1.25, z);
+    ring.add(label);
+  });
+  scene.add(ring);
+  return ring;
+}
 
-// Animation
+function createMenuBar() {
+  const group = new THREE.Group();
+  const bar = new THREE.Mesh(
+    new THREE.BoxGeometry(32, 1.4, 2.6),
+    new THREE.MeshStandardMaterial({ color: 0xf5f5f5, metalness: 0.75, roughness: 0.3 })
+  ); group.add(bar);
+  const barLabel = makeTextSprite('♫ FreeTubeBar', '#fbbf24');
+  barLabel.position.y = 1.15; group.add(barLabel);
+  const npDot = new THREE.Mesh(new THREE.SphereGeometry(0.28), new THREE.MeshBasicMaterial({ color: 0x10b981 }));
+  npDot.position.set(29.5, -0.6, 0); group.add(npDot);
+  return group;
+}
+
+function createRadioMix() {
+  const group = new THREE.Group();
+  const hub = new THREE.Mesh(new THREE.TorusGeometry(6.4, 0.45, 128, 36), new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xf87121 }));
+  group.add(hub);
+  const label = makeTextSprite('📻 Radio Mix', '#ef4444');
+  label.position.y = 2.4; group.add(label);
+  return group;
+}
+
+function createNowPlayingRing() {
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(6.9, 0.28, 24, 100), new THREE.MeshStandardMaterial({ color: 0x34d399, emissiveIntensity: 0.5 }));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = -7.65; scene.add(ring);
+  const label = makeTextSprite('macOS Now Playing', '#10b981');
+  label.position.set(0, -8.35, 0); label.scale.setScalar(1.4); scene.add(label);
+  return ring;
+}
+
+scene.add(new THREE.AmbientLight(0x6b7a74, 0.38));
+const dirLight = new THREE.DirectionalLight(0xfafafa, 1.1);
+dirLight.position.set(-25, -8, -30); scene.add(dirLight);
+const rimLight = new THREE.DirectionalLight(0xec4899, 10);
+rimLight.position.set(20, -3, -12); scene.add(rimLight);
+const pointLight = new THREE.PointLight(0x22d3ee, 45, 50);
+pointLight.position.set(-18, 14, -45); scene.add(pointLight);
+
+const core = createCore();
+const genres = createGenreRing();
+const menuBar = createMenuBar();
+const radio = createRadioMix();
+const npRing = createNowPlayingRing();
+
+scene.add(menuBar);
+
 const clock = new THREE.Clock();
-function animate() {
-  requestAnimationFrame(animate);
+function tick() {
   const t = clock.getElapsedTime();
-  core.rotation.x += 0.004;
-  core.rotation.y += 0.006;
-  wire.rotation.x -= 0.003;
-  wire.rotation.y -= 0.005;
-  ring.rotation.y += 0.0016;
-  bar.position.x = Math.sin(t * 0.6) * 1.5;
-  npRing.rotation.z += 0.003;
-  const pulse = 1 + Math.sin(t * 2.0) * 0.06;
-  core.scale.setScalar(pulse);
+  core.rotation.x += 0.0085;
+  core.rotation.y += 0.012;
+  torus.rotation.x -= 0.0096;
+  genres.rotation.y += 0.0016;
+  menuBar.position.x = Math.sin(t * 0.57) * 1.6;
+  npRing.rotation.z += 0.0038;
+  rimLight.intensity = 10 + Math.sin(t * 1.4) * 3;
   controls.update();
   renderer.render(scene, camera);
+  requestAnimationFrame(tick);
 }
-animate();
+tick();
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
