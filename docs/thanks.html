@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Thanks! — FreeTubeInstaller Pro</title>
+<meta name="description" content="Your download is ready. Install FreeTubeInstaller Pro on your Mac." />
+<meta name="robots" content="noindex" />
+<meta name="theme-color" content="#0b1020" />
+<style>
+  :root {
+    --bg: #0b1020; --panel: #131a30; --border: rgba(255,255,255,0.09);
+    --text: #eaf0ff; --muted: #8b96b8; --accent: #fbbf24; --accent2: #d97736; --green: #34d399;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, 'SF Pro Text', 'Segoe UI', Inter, sans-serif;
+    color: var(--text);
+    background: radial-gradient(1200px 800px at 50% -10%, #1b2547 0%, var(--bg) 55%, #070a14 100%);
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 28px; line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .card {
+    max-width: 560px; width: 100%; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 18px; padding: 40px 36px; box-shadow: 0 24px 60px rgba(0,0,0,0.5); text-align: center;
+  }
+  .check {
+    width: 68px; height: 68px; border-radius: 50%; margin: 0 auto 18px;
+    background: linear-gradient(135deg, #22c55e, #15803d); display: flex; align-items: center; justify-content: center;
+    font-size: 34px; box-shadow: 0 10px 30px rgba(34,197,94,0.35);
+  }
+  h1 { font-size: 26px; font-weight: 800; letter-spacing: -.3px; margin-bottom: 8px; }
+  .sub { color: var(--muted); font-size: 15px; margin-bottom: 28px; }
+  .buy {
+    display: inline-block; padding: 15px 34px; border-radius: 12px; font-weight: 700; font-size: 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #0b1020;
+    box-shadow: 0 10px 30px rgba(251,191,36,0.25); transition: transform .15s, box-shadow .15s;
+    text-decoration: none;
+  }
+  .buy:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(251,191,36,0.35); }
+  .steps { text-align: left; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border); }
+  .steps h2 { font-size: 15px; margin-bottom: 14px; }
+  .step { display: flex; gap: 12px; margin-bottom: 14px; font-size: 14px; }
+  .step .n {
+    flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%; background: rgba(251,191,36,0.15);
+    color: #fde68a; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 13px;
+  }
+  .step code {
+    display: inline-block; margin-top: 4px; background: rgba(0,0,0,0.35); border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 8px; font-size: 12px; color: #cbd5e1;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .note { margin-top: 18px; font-size: 12px; color: var(--muted); }
+  .note a { color: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="check">✓</div>
+    <h1>Thanks — you're all set!</h1>
+    <p class="sub">Your FreeTubeInstaller Pro download is ready. Grab it below and you'll be up and running in under a minute.</p>
+
+    <a class="buy" href="https://github.com/ZeroXSHDW/freetube-install/releases/latest/download/FreeTubeInstaller-macOS.zip">
+      ⬇ Download FreeTubeInstaller
+    </a>
+
+    <div class="steps">
+      <h2>Install — 3 steps</h2>
+      <div class="step"><span class="n">1</span><div>Unzip the download (double-click <b>FreeTubeInstaller-macOS.zip</b>).</div></div>
+      <div class="step"><span class="n">2</span><div>Double-click <b>Install FreeTubeInstaller.command</b>. If macOS asks, right-click it and choose <b>Open</b>.</div></div>
+      <div class="step"><span class="n">3</span><div>Launch it and click <b>Install / Update</b> — it installs FreeTube, builds the 18 Top Charts genres, and puts ♫ in your menu bar.</div></div>
+    </div>
+
+    <p class="note">
+      🔐 Gatekeeper note: the app is ad-hoc signed (like FreeTube itself). If macOS blocks it, run
+      <code>xattr -dr com.apple.quarantine ~/Applications/FreeTubeInstaller.app</code>
+      — the included <code>Install</code> command does this automatically.<br><br>
+      Problems? Open an issue at <a href="https://github.com/ZeroXSHDW/freetube-install">github.com/ZeroXSHDW/freetube-install</a>.
+    </p>
+  </div>
+</body>
+</html>

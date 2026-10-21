@@ -48,7 +48,7 @@ A clean sales landing page ships at **`docs/buy.html`** (live at
 To start selling:
 
 1. Create a **Stripe account** at <https://dashboard.stripe.com>.
-2. Create a **Payment Link** for a one-time product (e.g. $9) at
+2. Create a **Payment Link** for a one-time product (e.g. €5) at
    <https://dashboard.stripe.com/payment-links> — no backend is required; Payment
    Links work directly from static GitHub Pages.
 3. Paste the link (`https://buy.stripe.com/…`) into `docs/buy.html`, replacing the
