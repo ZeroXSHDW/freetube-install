@@ -203,7 +203,7 @@
     var isPlaceholder = !link || link.indexOf('REPLACE_ME') !== -1;
     document.querySelectorAll('.js-buy').forEach(function (a) {
       a.href = isPlaceholder ? 'https://github.com/ZeroXSHDW/freetube-install' : link;
-      if (isPlaceholder) a.textContent = a.textContent.replace('$9', 'Build free');
+      if (isPlaceholder) a.textContent = 'Build free from source';
     });
   });
 </script>
