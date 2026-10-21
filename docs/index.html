@@ -24,6 +24,12 @@
   html, body { margin: 0; height: 100%; overflow: hidden; background: radial-gradient(1500px 900px at 50% 25%, #1b2547 0%, #0b1020 55%, #070a14 100%); font-family: -apple-system, 'SF Pro Text', 'Segoe UI', Inter, sans-serif; color: var(--text); -webkit-tap-highlight-color: transparent; }
   #scene { position: fixed; inset: 0; z-index: 0; touch-action: none; }
 
+  /* Loading screen */
+  #loader { position:fixed; inset:0; background:var(--bg); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:opacity .4s ease; }
+  #loader.hidden { opacity:0; pointer-events:none; }
+  .loader-ring { width:48px; height:48px; border:3px solid rgba(251,191,36,0.2); border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; }
+  @keyframes spin { to { rotate: 360deg; } }
+
   /* macOS menu bar simulation */
   #menu-bar {
     position: fixed; left: 0; top: 0; right: 0; height: 26px;
@@ -71,10 +77,8 @@
     box-shadow:0 6px 18px rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;
     border:1px solid rgba(255,255,255,0.08); position:relative; overflow:hidden;
   }
-  .art::before { content:''; position:absolute; inset:-2px; background:linear-gradient(45deg,#8b5cf6,#ec4899,#f59e0b);
-    animation:rotate 3s linear infinite; border-radius:inherit; -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:destination-out; mask-composite:exclude;
-  }
-  @keyframes rotate { from{rotate:0deg} to{rotate:360deg} }
+  .art img { width:100%; height:100%; object-fit:cover; display:block; }
+  .art .emoji-fallback { font-size:22px; display:flex; align-items:center; justify-content:center; }
   .np-title { font-size:13px; font-weight:600; color:#fff; line-height:1.15; margin-bottom:2px; text-shadow:0 2px 6px rgba(0,0,0,0.4); }
   .np-artist { font-size:11px; color:#a1a1aa; opacity:.85; }
   .np-info { flex:1; min-width:0; }
@@ -103,9 +107,25 @@
   .queue-item:hover { background:rgba(255,255,255,0.06); }
   .queue-item.active { background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.3); }
   .queue-item .thumb { width:32px; height:32px; border-radius:6px; background:linear-gradient(135deg,#1f2937,#374151); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:14px; border:1px solid rgba(255,255,255,0.05); }
+  .queue-item .thumb img { width:100%; height:100%; object-fit:cover; border-radius:inherit; display:block; }
+  .queue-item .thumb .emoji-fallback { font-size:14px; display:flex; align-items:center; justify-content:center; }
   .queue-item .info { flex:1; min-width:0; }
   .queue-item .title { font-weight:600; color:#eaf0ff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.1; }
   .queue-item .artist { font-size:9.5px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* Theme / Settings panel */
+  #settings-panel {
+    position: fixed; left: 20px; top: 70px; width: 260px;
+    background: linear-gradient(180deg, rgba(17,24,39,0.94), rgba(17,24,39,0.88));
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.45); backdrop-filter: blur(20px); z-index: 60;
+    opacity: 0; visibility: hidden; transition: opacity .25s ease; transform: translateY(-10px);
+  }
+  #settings-panel.show { opacity: 1; visibility: visible; transform: translateY(0); }
+  .settings-header { font-size:11px; font-weight:700; color:#cbd5e1; text-transform:uppercase; letter-spacing:.5px; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+  .setting-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:12px; color:#eaf0ff; }
+  .setting-row label { font-weight:500; color:#94a3b8; }
+  select, input[type=range] { background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:#eaf0ff; padding:4px 8px; font-size:11px; cursor:pointer; }
 
   /* Genre HUD */
   .hud { position:fixed; z-index:40; pointer-events:none; }
@@ -157,6 +177,10 @@
   .status-badge { position:fixed; right:20px; bottom:20px; color:#79c0ff; font-size:11px; border:1px solid rgba(121,192,255,0.22); background:rgba(3,6,14,0.85); padding:4px 10px; border-radius:12px; backdrop-filter:blur(8px); box-shadow:0 6px 20px rgba(0,0,0,0.35); z-index:5; display:flex; align-items:center; gap:5px; letter-spacing:.4px; cursor:help; }
   .status-badge svg { width:11px; height:11px; fill:currentColor; flex-shrink:0; }
 
+  /* Share toast */
+  #share-toast { position:fixed; left:50%; bottom:80px; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:#fff; padding:8px 16px; border-radius:20px; font-size:12px; z-index:150; opacity:0; transition:opacity .3s; pointer-events:none; }
+  #share-toast.show { opacity:1; }
+
   /* Mobile / responsive */
   @media (max-width: 768px) {
     #menu-bar { height: 22px; padding: 0 12px; font-size: 10px; }
@@ -177,6 +201,7 @@
     .ctrl-btn { width: 32px; height: 32px; font-size: 12px; }
 
     #queue-panel { right: 12px; top: 56px; width: 88vw; }
+    #settings-panel { left: 12px; top: 56px; width: 88vw; }
     .queue-item { font-size: 10px; }
 
     .cta { bottom: 22px; gap: 8px; padding: 0 12px; }
@@ -208,6 +233,10 @@
 </style>
 </head>
 <body>
+  <div id="loader">
+    <div class="loader-ring"></div>
+    <div style="margin-top:16px; font-size:12px; color:#8b96b8; letter-spacing:2px;">Loading FreeTube Music System</div>
+  </div>
   <canvas id="scene"></canvas>
 
   <!-- Tooltip -->
@@ -230,7 +259,7 @@
   <!-- Now playing popover -->
   <div id="popover" role="dialog" aria-modal="true" aria-label="Now playing">
     <div class="np-header">
-      <div class="art" aria-hidden="true">🎵</div>
+      <div class="art" aria-hidden="true"><span class="emoji-fallback">🎵</span><img id="npArtImg" src="" alt="" style="display:none;"></div>
       <div class="np-info">
         <div class="np-title" id="npTitle">Now Playing</div>
         <div class="np-artist" id="npArtist">FreeTube macOS Music System</div>
@@ -252,6 +281,30 @@
   <div id="queue-panel" role="region" aria-label="Up next">
     <div class="queue-header">📋 Up Next <span id="queueCount">0 tracks</span></div>
     <div class="queue-list" id="queueList"></div>
+  </div>
+
+  <!-- Settings panel -->
+  <div id="settings-panel">
+    <div class="settings-header">⚙ Settings</div>
+    <div class="setting-row"><label>Theme</label><select id="themeSelect">
+      <option value="dark">Dark (default)</option>
+      <option value="neon">Neon Cyber</option>
+      <option value="sunset">Sunset</option>
+      <option value="ocean">Ocean</option>
+    </select></div>
+    <div class="setting-row"><label>Quality</label><select id="qualitySelect">
+      <option value="high">High</option>
+      <option value="medium">Medium</option>
+      <option value="low">Low</option>
+    </select></div>
+    <div class="setting-row"><label>Auto-rotate</label><select id="rotateSelect">
+      <option value="on">On</option>
+      <option value="off">Off</option>
+    </select></div>
+    <div class="setting-row"><label>Audio viz</label><select id="audioSelect">
+      <option value="simulated">Simulated</option>
+      <option value="microphone">Microphone (click to enable)</option>
+    </select></div>
   </div>
 
   <!-- Genre HUD -->
@@ -276,6 +329,8 @@
       Embed
     </button>
     <button class="cta-btn cta-outline" id="screenshotBtn" title="Download screenshot">📸 Capture</button>
+    <button class="cta-btn cta-outline" id="shareBtn" title="Share this view">↗ Share</button>
+    <button class="cta-btn cta-outline" id="settingsBtn" title="Settings">⚙</button>
   </div>
 
   <div class="controls">Drag to rotate · Scroll to zoom</div>
@@ -300,6 +355,7 @@
     </div>
   </div>
 
+  <div id="share-toast">Copied share link!</div>
   <div id="fps">0 FPS</div>
 
 <script type="module">
@@ -307,7 +363,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/OrbitControls.js';
 
 const canvas = document.getElementById('scene');
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0x0b1020, 1);
@@ -328,6 +384,35 @@ controls.maxDistance = 45;
 controls.maxPolarAngle = Math.PI / 3;
 
 const GENRES = ['Pop', 'Hip-Hop/Rap', 'Rock', 'Country', 'R&B/Soul', 'Electronic', 'Dance', 'Alternative', 'Latin', 'Reggae', 'Jazz', 'Classical', 'Blues', 'Singer/Songwriter', 'World', 'Soundtrack', 'Russian Rap', 'Russian Pop'];
+
+const TRACKS_PER_GENRE = {
+  'Pop': ['Blinding Lights', 'Levitating', 'As It Was', 'About Damn Time'],
+  'Hip-Hop/Rap': ['Industry Baby', 'Montero', 'Savage', 'Rockstar'],
+  'Rock': ['Medium Rare', 'Shameika', 'The Less I Know', 'Dreams'],
+  'Country': ['Tennessee Whiskey', 'Wasted on You', 'Sand in My Boots', 'Buy Dirt'],
+  'R&B/Soul': ['Leave The Door Open', 'Peaches', 'Slow Down', 'Best Part'],
+  'Electronic': ['Midnight City', 'Strobe', 'Adagio for Strings', 'Silence'],
+  'Dance': ['Hot Stuff', 'I Feel Love', 'Celebration', 'Rhythm Is Gonna Get You'],
+  'Alternative': ['Mr. Brightside', 'Boulevard of Broken Dreams', 'Creep', 'Seven Nation Army'],
+  'Latin': ['Despacito', 'Mi Gente', 'Dákiti', 'Hawái'],
+  'Reggae': ['Three Little Birds', 'Could You Be Loved', 'One Love', 'Redemption Song'],
+  'Jazz': ['Take Five', 'So What', 'Round Midnight', 'Blue Train'],
+  'Classical': ['Symphony No. 5', 'The Four Seasons', 'Moonlight Sonata', 'Canon in D'],
+  'Blues': ['The Thrill Is Gone', 'Stormy Monday', 'Sweet Home Chicago', 'Cross Road Blues'],
+  'Singer/Songwriter': ['Fast Car', 'Landslide', 'Fire and Rain', 'A Case of You'],
+  'World': ['Waka Waka', 'Jai Ho', 'Bailando', 'Dragostea Din Tei'],
+  'Soundtrack': ['Star Wars Theme', 'Hedwig Theme', 'Imperial March', 'Let It Go'],
+  'Russian Rap': ['Оймо', 'Иноагент', 'Чёрный бумер', 'Серебряный дождь'],
+  'Russian Pop': ['Синие глаза', 'Майнкрафт', 'Луна', 'Колыбельная']
+};
+const ARTISTS = ['Artist One', 'Artist Two', 'Artist Three', 'Artist Four', 'Artist Five'];
+
+const THEMES = {
+  dark:   { bg: 0x0b1020, core: 0x0d9488, wire: 0xff8c79, inner: 0xeef9ff, torus: 0x7835fd, ambient: 0x6b7a74, dir: 0xfafafa, rim: 0xec4899, point: 0x22d3ee },
+  neon:   { bg: 0x050510, core: 0x00ff9f, wire: 0xff00ff, inner: 0xffffff, torus: 0x00ffff, ambient: 0x4444ff, dir: 0xffffff, rim: 0xff00ff, point: 0x00ffff },
+  sunset: { bg: 0x1a0a1a, core: 0xff4500, wire: 0xffd700, inner: 0xffeecc, torus: 0xff69b4, ambient: 0xff6600, dir: 0xffdead, rim: 0xff1493, point: 0xffd700 },
+  ocean:  { bg: 0x001a2e, core: 0x00b4d8, wire: 0x90e0ef, inner: 0xcaf0f8, torus: 0x48cae4, ambient: 0x0077b6, dir: 0xade8f4, rim: 0x00b4d8, point: 0x90e0ef },
+};
 
 function makeTextSprite(text, color = '#ffffff') {
   const c = document.createElement('canvas');
@@ -362,7 +447,7 @@ function createGenreRing() {
     const color = new THREE.Color().setHSL(i / GENRES.length, 0.88, 0.6);
     const node = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.82, 0.82), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.4 }));
     node.position.set(x, y, z);
-    node.userData = { angle, baseY: y, baseColor: color, baseEmissive: color.clone() };
+    node.userData = { angle, baseY: y, baseColor: color.clone(), baseEmissive: color.clone() };
     ring.add(node);
     const label = makeTextSprite(name);
     label.position.set(x, y + 1.25, z);
@@ -412,29 +497,27 @@ const radio = createRadioMix();
 const npRing = createNowPlayingRing();
 scene.add(menuBar3D);
 
-// --- Data ---
-const TRACKS_PER_GENRE = {
-  'Pop': ['Blinding Lights', 'Levitating', 'As It Was', 'About Damn Time'],
-  'Hip-Hop/Rap': ['Industry Baby', 'Montero', 'Savage', 'Rockstar'],
-  'Rock': ['Medium Rare', 'Shameika', 'The Less I Know', 'Dreams'],
-  'Country': ['Tennessee Whiskey', 'Wasted on You', 'Sand in My Boots', 'Buy Dirt'],
-  'R&B/Soul': ['Leave The Door Open', 'Peaches', 'Slow Down', 'Best Part'],
-  'Electronic': ['Midnight City', 'Strobe', 'Adagio for Strings', 'Silence'],
-  'Dance': ['Hot Stuff', 'I Feel Love', 'Celebration', 'Rhythm Is Gonna Get You'],
-  'Alternative': ['Mr. Brightside', 'Boulevard of Broken Dreams', 'Creep', 'Seven Nation Army'],
-  'Latin': ['Despacito', 'Mi Gente', 'Dákiti', 'Hawái'],
-  'Reggae': ['Three Little Birds', 'Could You Be Loved', 'One Love', 'Redemption Song'],
-  'Jazz': ['Take Five', 'So What', 'Round Midnight', 'Blue Train'],
-  'Classical': ['Symphony No. 5', 'The Four Seasons', 'Moonlight Sonata', 'Canon in D'],
-  'Blues': ['The Thrill Is Gone', 'Stormy Monday', 'Sweet Home Chicago', 'Cross Road Blues'],
-  'Singer/Songwriter': ['Fast Car', 'Landslide', 'Fire and Rain', 'A Case of You'],
-  'World': ['Waka Waka', 'Jai Ho', 'Bailando', 'Dragostea Din Tei'],
-  'Soundtrack': ['Star Wars Theme', 'Hedwig Theme', 'Imperial March', 'Let It Go'],
-  'Russian Rap': ['Оймо', 'Иноагент', 'Чёрный бумер', 'Серебряный дождь'],
-  'Russian Pop': ['Синие глаза', 'Майнкрафт', 'Луна', 'Колыбельная']
-};
-
-const ARTISTS = ['Artist One', 'Artist Two', 'Artist Three', 'Artist Four', 'Artist Five'];
+// --- Web Audio API (microphone) ---
+let audioAnalyser = null; let audioDataArray = null; let micEnabled = false;
+async function initMic() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioCtx.createMediaStreamSource(stream);
+    audioAnalyser = audioCtx.createAnalyser();
+    audioAnalyser.fftSize = 64;
+    audioDataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
+    source.connect(audioAnalyser);
+    micEnabled = true;
+    return true;
+  } catch (e) { return false; }
+}
+function getAudioLevel() {
+  if (!micEnabled || !audioAnalyser) return 0.5;
+  audioAnalyser.getByteFrequencyData(audioDataArray);
+  let sum = 0; for (let i = 0; i < audioDataArray.length; i++) sum += audioDataArray[i];
+  return (sum / audioDataArray.length) / 255;
+}
 
 // --- UI Logic ---
 const menuBarIcon = document.getElementById('menuBarIcon');
@@ -442,18 +525,21 @@ const popover = document.getElementById('popover');
 const queuePanel = document.getElementById('queue-panel');
 const queueList = document.getElementById('queueList');
 const queueCount = document.getElementById('queueCount');
-let popoverOpen = false;
-let queueOpen = false;
-
+let popoverOpen = false; let queueOpen = false;
 function togglePopover() { popoverOpen = !popoverOpen; popover.classList.toggle('show', popoverOpen); menuBarIcon.setAttribute('aria-pressed', String(popoverOpen)); }
 menuBarIcon.addEventListener('click', togglePopover);
 menuBarIcon.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePopover(); } });
 document.addEventListener('click', (e) => { if (!popover.contains(e.target) && !menuBarIcon.contains(e.target)) { popoverOpen = false; popover.classList.remove('show'); menuBarIcon.setAttribute('aria-pressed', 'false'); } });
 
-function toggleQueue() { queueOpen = !queueOpen; queuePanel.classList.toggle('show', queueOpen); queueBtn.setAttribute('aria-pressed', String(queueOpen)); }
-const queueBtn = document.getElementById('queueBtn');
-queueBtn.addEventListener('click', toggleQueue);
-queueBtn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleQueue(); } });
+function toggleQueue() { queueOpen = !queueOpen; queuePanel.classList.toggle('show', queueOpen); document.getElementById('queueBtn').setAttribute('aria-pressed', String(queueOpen)); }
+document.getElementById('queueBtn').addEventListener('click', toggleQueue);
+document.getElementById('queueBtn').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleQueue(); } });
+
+const settingsPanel = document.getElementById('settings-panel');
+let settingsOpen = false;
+function toggleSettings() { settingsOpen = !settingsOpen; settingsPanel.classList.toggle('show', settingsOpen); document.getElementById('settingsBtn').setAttribute('aria-pressed', String(settingsOpen)); }
+document.getElementById('settingsBtn').addEventListener('click', toggleSettings);
+document.getElementById('settingsBtn').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSettings(); } });
 
 // Progress simulation
 let progress = 0.48; let playing = true;
@@ -473,13 +559,12 @@ setInterval(() => {
 const genreHud = document.getElementById('genre-hud');
 GENRES.forEach((g, i) => {
   const d = document.createElement('div');
-  d.className = 'genre-chip';
-  d.textContent = g;
+  d.className = 'genre-chip'; d.textContent = g;
   d.setAttribute('role', 'button'); d.setAttribute('tabindex', '0'); d.setAttribute('aria-label', `Play ${g} genre`);
   d.addEventListener('click', () => setActiveGenre(i));
   d.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveGenre(i); } });
   d.addEventListener('mouseenter', () => { showTooltip(d, g); });
-  d.addEventListener('mouseleave', () => { hideTooltip(); });
+  d.addEventListener('mouseleave', hideTooltip);
   genreHud.appendChild(d);
 });
 const chips = genreHud.querySelectorAll('.genre-chip');
@@ -491,15 +576,13 @@ function buildQueue(genre) {
   tracks.forEach((title, i) => {
     const item = document.createElement('div');
     item.className = 'queue-item' + (i === 0 ? ' active' : '');
-    item.innerHTML = '<div class="thumb">🎵</div><div class="info"><div class="title">' + title + '</div><div class="artist">' + ARTISTS[i % ARTISTS.length] + ' • ' + genre + '</div></div>';
+    item.innerHTML = '<div class="thumb"><span class="emoji-fallback">🎵</span><img class="art-img" src="" alt="" style="display:none;"></div><div class="info"><div class="title">' + title + '</div><div class="artist">' + ARTISTS[i % ARTISTS.length] + ' • ' + genre + '</div></div>';
     item.addEventListener('click', () => {
       chips.forEach((c, idx) => c.classList.toggle('active', idx === i));
       activeIdx = i;
       document.getElementById('npTitle').textContent = title;
       document.getElementById('npArtist').textContent = ARTISTS[i % ARTISTS.length] + ' • ' + genre;
-      progress = 0; playing = true;
-      progressFill.style.width = '0%';
-      curTime.textContent = '0:00';
+      progress = 0; playing = true; progressFill.style.width = '0%'; curTime.textContent = '0:00';
       clearInterval(genreTimer); genreTimer = setInterval(cycleGenre, 4000);
     });
     queueList.appendChild(item);
@@ -509,11 +592,13 @@ function setActiveGenre(i) {
   activeIdx = i;
   chips.forEach((c, idx) => c.classList.toggle('active', idx === activeIdx));
   const genre = chips[activeIdx].textContent;
-  document.getElementById('npTitle').textContent = (TRACKS_PER_GENRE[genre] || ['Now Playing'])[0];
+  const tracks = TRACKS_PER_GENRE[genre] || ['Now Playing'];
+  document.getElementById('npTitle').textContent = tracks[0];
   document.getElementById('npArtist').textContent = ARTISTS[0] + ' • ' + genre;
-  progress = 0; playing = true;
-  progressFill.style.width = '0%';
-  curTime.textContent = '0:00';
+  const artImg = document.getElementById('npArtImg'); const emoji = document.querySelector('#popover .art .emoji-fallback');
+  const thumb = document.querySelector('#queue-item-0 .thumb .art-img') || null;
+  if (artImg) { artImg.src = makeArtwork(genre, tracks[0]); artImg.style.display = 'block'; emoji.style.display = 'none'; }
+  progress = 0; playing = true; progressFill.style.width = '0%'; curTime.textContent = '0:00';
   buildQueue(genre);
   clearInterval(genreTimer); genreTimer = setInterval(cycleGenre, 4000);
 }
@@ -524,12 +609,12 @@ setActiveGenre(0);
 const playBtn = popover.querySelector('.ctrl-btn.play');
 playBtn.addEventListener('click', () => { playing = !playing; playBtn.textContent = playing ? '▶' : '⏸'; });
 
-// --- Tooltip ---
+// Tooltip
 const tooltip = document.getElementById('tooltip');
 function showTooltip(el, text) { tooltip.textContent = text; tooltip.classList.add('show'); const r = el.getBoundingClientRect(); tooltip.style.left = (r.left + r.width/2 - tooltip.offsetWidth/2) + 'px'; tooltip.style.top = (r.top - 36) + 'px'; }
 function hideTooltip() { tooltip.classList.remove('show'); }
 
-// --- Embed modal ---
+// Embed modal
 const embedModal = document.getElementById('embed-modal');
 const embedBtn = document.getElementById('embedBtn');
 const closeEmbed = document.getElementById('closeEmbed');
@@ -547,11 +632,20 @@ copyEmbed.addEventListener('click', async () => {
   ta.select();
   await navigator.clipboard.writeText(ta.value);
   const orig = copyEmbed.textContent;
-  copyEmbed.textContent = 'Copied!';
-  setTimeout(() => { copyEmbed.textContent = orig; }, 1500);
+  copyEmbed.textContent = 'Copied!'; setTimeout(() => { copyEmbed.textContent = orig; }, 1500);
 });
 
-// --- Screenshot capture ---
+// Share
+document.getElementById('shareBtn').addEventListener('click', async () => {
+  const url = window.location.href;
+  try {
+    if (navigator.share) { await navigator.share({ title: 'FreeTube macOS Music System', text: 'Check out this FreeTube showcase', url }); }
+    else { await navigator.clipboard.writeText(url); }
+  } catch (e) {}
+  const t = document.getElementById('share-toast'); t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 1500);
+});
+
+// Screenshot capture
 document.getElementById('screenshotBtn').addEventListener('click', () => {
   renderer.render(scene, camera);
   const link = document.createElement('a');
@@ -560,16 +654,58 @@ document.getElementById('screenshotBtn').addEventListener('click', () => {
   link.click();
 });
 
-// --- FPS counter ---
+// FPS counter
 let lastTime = performance.now(); let frames = 0;
 const fpsEl = document.getElementById('fps');
 function updateFPS() {
-  frames++;
-  const now = performance.now();
+  frames++; const now = performance.now();
   if (now - lastTime >= 1000) { fpsEl.textContent = frames + ' FPS'; frames = 0; lastTime = now; }
   requestAnimationFrame(updateFPS);
 }
 updateFPS();
+
+// --- Settings handlers ---
+document.getElementById('themeSelect').addEventListener('change', (e) => {
+  const th = THEMES[e.target.value];
+  scene.background.setHex(th.bg); scene.fog.color.setHex(th.bg);
+  core.material.color.setHex(th.core); core.material.emissive.setHex(th.core);
+  core.children[1].material.color.setHex(th.wire);
+  core.children[2].material.color.setHex(th.inner);
+  core.children[3].material.color.setHex(th.torus);
+  scene.children.forEach(c => { if (c.type === 'AmbientLight') c.color.setHex(th.ambient); if (c.type === 'DirectionalLight' && c.position.x < 0) c.color.setHex(th.dir); if (c.type === 'DirectionalLight' && c.position.x > 0) c.color.setHex(th.rim); if (c.type === 'PointLight') c.color.setHex(th.point); });
+});
+document.getElementById('qualitySelect').addEventListener('change', (e) => {
+  const q = e.target.value;
+  renderer.setPixelRatio(q === 'high' ? Math.min(window.devicePixelRatio, 2) : q === 'medium' ? 1.5 : 1);
+  controls.enabled = q !== 'low';
+});
+document.getElementById('rotateSelect').addEventListener('change', (e) => { controls.autoRotate = e.target.value === 'on'; });
+document.getElementById('audioSelect').addEventListener('change', async (e) => {
+  if (e.target.value === 'microphone' && !micEnabled) {
+    const ok = await initMic();
+    if (!ok) { alert('Microphone access denied or unavailable. Falling back to simulated audio.'); e.target.value = 'simulated'; }
+  } else if (e.target.value === 'simulated') { micEnabled = false; }
+});
+
+// --- Artwork generator (procedural) ---
+function makeArtwork(genre, title) {
+  const c = document.createElement('canvas'); c.width = 300; c.height = 300;
+  const ctx = c.getContext('2d');
+  const hue = (GENRES.indexOf(genre) / GENRES.length) * 360;
+  ctx.fillStyle = `hsl(${hue}, 70%, 25%)`;
+  ctx.fillRect(0, 0, 300, 300);
+  ctx.fillStyle = `hsla(${hue}, 80%, 60%, 0.15)`;
+  for (let i = 0; i < 40; i++) {
+    ctx.beginPath();
+    ctx.arc(Math.random()*300, Math.random()*300, Math.random()*60 + 20, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.font = 'bold 28px -apple-system, Segoe UI, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(title.length > 14 ? title.slice(0,14)+'…' : title, 150, 150);
+  return c.toDataURL();
+}
 
 // --- Audio-reactive 3D animation ---
 let audioBeat = 0; let audioTime = 0;
@@ -577,7 +713,8 @@ const clock = new THREE.Clock();
 function tick() {
   const t = clock.getElapsedTime();
   audioTime += 0.02;
-  audioBeat = Math.sin(t * 2.5) * 0.5 + 0.5;
+  const micLevel = getAudioLevel();
+  audioBeat = Math.max(Math.sin(t * 2.5) * 0.5 + 0.5, micLevel);
 
   core.rotation.x += 0.0085; core.rotation.y += 0.012;
   core.children[3] && (core.children[3].rotation.x -= 0.0096);
@@ -587,12 +724,12 @@ function tick() {
 
   genreRing.nodeData.forEach(({node, label}, i) => {
     const beat = Math.sin(t * 3 + i * 0.5) * 0.4 + 0.6;
-    node.scale.setScalar(0.85 + beat * 0.25);
-    const intensity = 0.3 + beat * 0.5;
-    node.material.emissiveIntensity = intensity;
-    label.scale.setScalar(0.9 + beat * 0.15);
-    node.position.y = node.userData.baseY + Math.sin(t * 4 + i) * 0.4 * beat;
-    label.position.y = node.userData.baseY + 1.25 + Math.sin(t * 4 + i) * 0.4 * beat;
+    const finalBeat = Math.max(beat, audioBeat);
+    node.scale.setScalar(0.85 + finalBeat * 0.25);
+    node.material.emissiveIntensity = 0.3 + finalBeat * 0.5;
+    label.scale.setScalar(0.9 + finalBeat * 0.15);
+    node.position.y = node.userData.baseY + Math.sin(t * 4 + i) * 0.4 * finalBeat;
+    label.position.y = node.userData.baseY + 1.25 + Math.sin(t * 4 + i) * 0.4 * finalBeat;
   });
 
   genreRing.ring.rotation.y += 0.0012 + audioBeat * 0.002;
@@ -604,6 +741,9 @@ function tick() {
   updateFPS();
   requestAnimationFrame(tick);
 }
+
+// Remove loader after first frame
+setTimeout(() => { document.getElementById('loader').classList.add('hidden'); }, 800);
 tick();
 
 window.addEventListener('resize', () => {
