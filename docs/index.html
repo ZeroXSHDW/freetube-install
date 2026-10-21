@@ -117,6 +117,24 @@
   .queue-item .title { font-weight:600; color:#eaf0ff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.1; }
   .queue-item .artist { font-size:9.5px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
+  /* History panel */
+  #history-panel {
+    position: fixed; left: 20px; top: 70px; width: 260px;
+    background: linear-gradient(180deg, rgba(17,24,39,0.94), rgba(17,24,39,0.88));
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.45); backdrop-filter: blur(20px); z-index: 60;
+    opacity: 0; visibility: hidden; transition: opacity .25s ease; transform: translateY(-10px);
+  }
+  #history-panel.show { opacity: 1; visibility: visible; transform: translateY(0); }
+  .settings-header, .history-header { font-size:11px; font-weight:700; color:#cbd5e1; text-transform:uppercase; letter-spacing:.5px; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+  .history-list { max-height: 180px; overflow-y: auto; }
+  .history-item { display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:8px; margin-bottom:5px; cursor:pointer; font-size:10.5px; transition:all .15s; }
+  .history-item:hover { background:rgba(255,255,255,0.06); }
+  .history-item .thumb { width:24px; height:24px; border-radius:5px; background:linear-gradient(135deg,#1f2937,#374151); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; }
+  .history-item .info { flex:1; min-width:0; }
+  .history-item .title { font-weight:600; color:#eaf0ff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.1; }
+  .history-item .artist { font-size:9px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
   /* Settings panel */
   #settings-panel {
     position: fixed; left: 20px; top: 70px; width: 260px;
@@ -126,7 +144,6 @@
     opacity: 0; visibility: hidden; transition: opacity .25s ease; transform: translateY(-10px);
   }
   #settings-panel.show { opacity: 1; visibility: visible; transform: translateY(0); }
-  .settings-header { font-size:11px; font-weight:700; color:#cbd5e1; text-transform:uppercase; letter-spacing:.5px; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
   .setting-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:12px; color:#eaf0ff; }
   .setting-row label { font-weight:500; color:#94a3b8; }
   select, input[type=range] { background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:#eaf0ff; padding:4px 8px; font-size:11px; cursor:pointer; }
@@ -178,8 +195,27 @@
   .close-btn { position:absolute; top:16px; right:16px; background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer; padding:4px; }
   .close-btn:hover { color:#fff; }
 
-  /* FPS counter */
-  #fps { position:fixed; left:10px; top:10px; color:#71717a; font-size:10px; z-index:50; font-family:ui-monospace, monospace; pointer-events:none; }
+  /* Help modal */
+  #help-modal {
+    position: fixed; inset: 0; background: rgba(3,6,14,0.85); backdrop-filter: blur(20px);
+    z-index: 200; display: none; align-items: center; justify-content: center;
+  }
+  #help-modal.show { display: flex; }
+  .help-card {
+    width: 420px; max-width: 90vw;
+    background: linear-gradient(180deg, rgba(17,24,39,0.96), rgba(17,24,39,0.9));
+    border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; padding: 24px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.5); backdrop-filter: blur(24px); color: #eaf0ff;
+  }
+  .help-card h3 { margin: 0 0 16px; font-size: 16px; font-weight: 700; display:flex; align-items:center; gap:8px; }
+  .kbd-list { display:grid; gap:8px; }
+  .kbd-row { display:flex; gap:12px; flex-wrap:wrap; }
+  .kbd-item { display:flex; align-items:center; gap:6px; font-size:12px; color:#cbd5e1; }
+  .kbd-item kbd { border:1px solid rgba(255,255,255,0.15); border-radius:4px; padding:2px 6px; font-size:11px; background:rgba(255,255,255,0.05); font-family:inherit; }
+  .kbd-item .desc { color:#94a3b8; font-size:11px; }
+
+  /* Stats */
+  #stats { position:fixed; left:10px; top:42px; color:#71717a; font-size:10px; z-index:50; font-family:ui-monospace, monospace; pointer-events:none; line-height:1.5; }
 
   /* Tooltip */
   .tooltip { position:fixed; background:rgba(0,0,0,0.8); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; pointer-events:none; z-index:200; opacity:0; transition:opacity .2s; white-space:nowrap; }
@@ -218,6 +254,7 @@
 
     #queue-panel { right: 12px; top: 56px; width: 88vw; }
     #settings-panel { left: 12px; top: 56px; width: 88vw; }
+    #history-panel { left: 12px; top: 56px; width: 88vw; }
     .queue-item { font-size: 10px; }
 
     #camera-bar { bottom: 70px; gap: 6px; }
@@ -243,6 +280,7 @@
     .genre-chip { font-size: 9px; padding: 2.5px 10px; }
     #status-hud { top: 44px; right: 12px; font-size: 10px; line-height: 1.3; }
     .embed-card { width: 92vw; padding: 16px; }
+    .help-card { width: 92vw; padding: 16px; }
   }
   @media (hover: none) {
     #menu-bar .freetube:active { background: rgba(251,191,36,0.22); transform: translateY(-1px); }
@@ -311,6 +349,12 @@
     <div class="queue-list" id="queueList"></div>
   </div>
 
+  <!-- History panel -->
+  <div id="history-panel">
+    <div class="history-header">⏱ Recent</div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
   <!-- Settings panel -->
   <div id="settings-panel">
     <div class="settings-header">⚙ Settings</div>
@@ -332,6 +376,10 @@
     <div class="setting-row"><label>Audio viz</label><select id="audioSelect">
       <option value="simulated">Simulated</option>
       <option value="microphone">Microphone</option>
+    </select></div>
+    <div class="setting-row"><label>Bloom</label><select id="bloomSelect">
+      <option value="on">On</option>
+      <option value="off">Off</option>
     </select></div>
   </div>
 
@@ -360,6 +408,7 @@
       Get FreeTube at freetubeapp.io
     </a>
     <button class="cta-btn cta-outline" id="queueBtn" title="Toggle queue panel">📋 Queue</button>
+    <button class="cta-btn cta-outline" id="historyBtn" title="View history">⏱ History</button>
     <button class="cta-btn cta-outline" id="embedBtn" title="Get embed code for your site">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect width="18" height="12" x="3" y="3" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 3v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3z"/></svg>
       Embed
@@ -368,6 +417,7 @@
     <button class="cta-btn cta-outline" id="shareBtn" title="Share this view">↗ Share</button>
     <button class="cta-btn cta-outline" id="settingsBtn" title="Settings">⚙</button>
     <button class="cta-btn cta-outline" id="fullscreenBtn" title="Toggle fullscreen">⛶</button>
+    <button class="cta-btn cta-outline" id="helpBtn" title="Keyboard shortcuts">?</button>
   </div>
 
   <div class="controls">Drag to rotate · Scroll to zoom</div>
@@ -392,21 +442,46 @@
     </div>
   </div>
 
-  <div id="share-toast">Copied share link!</div>
-  <div id="fps">0 FPS</div>
-  <div id="shortcuts">
-    <kbd>1-9</kbd> Jump genre · <kbd>Space</kbd> Play · <kbd>F</kbd> Fullscreen · <kbd>?</kbd> Help
+  <!-- Help modal -->
+  <div id="help-modal" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+    <button class="close-btn" id="closeHelp" aria-label="Close">&times;</button>
+    <div class="help-card">
+      <h3><span>⌨</span> Keyboard shortcuts</h3>
+      <div class="kbd-list">
+        <div class="kbd-row">
+          <div class="kbd-item"><kbd>Space</kbd><span class="desc">Play / Pause</span></div>
+          <div class="kbd-item"><kbd>1–9</kbd><span class="desc">Jump to genre</span></div>
+        </div>
+        <div class="kbd-row">
+          <div class="kbd-item"><kbd>F</kbd><span class="desc">Fullscreen</span></div>
+          <div class="kbd-item"><kbd>?</kbd><span class="desc">Show help</span></div>
+        </div>
+        <div class="kbd-row">
+          <div class="kbd-item"><kbd>Drag</kbd><span class="desc">Rotate scene</span></div>
+          <div class="kbd-item"><kbd>Scroll</kbd><span class="desc">Zoom</span></div>
+        </div>
+      </div>
+      <p style="margin-top:16px; font-size:11px; color:#94a3b8;">Drag to rotate the 3D scene · Scroll to zoom · Click ♫ FreeTubeBar to open Now Playing</p>
+    </div>
   </div>
+
+  <div id="share-toast">Copied share link!</div>
+  <div id="stats">0 FPS<br>0 tris</div>
+  <div id="fps">0 FPS</div>
 
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/OrbitControls.js';
+import { EffectComposer } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/postprocessing/UnrealBloomPass.js';
 
 const canvas = document.getElementById('scene');
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0x0b1020, 1);
+renderer.toneMapping = THREE.ReinhardToneMapping;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0b1020);
@@ -422,6 +497,15 @@ controls.autoRotateSpeed = 1.0;
 controls.minDistance = 8;
 controls.maxDistance = 45;
 controls.maxPolarAngle = Math.PI / 3;
+
+// Post-processing composer with bloom
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.2, 0.4, 0.85);
+bloomPass.threshold = 0.1;
+bloomPass.strength = 1.2;
+bloomPass.radius = 0.4;
+composer.addPass(bloomPass);
 
 const GENRES = ['Pop', 'Hip-Hop/Rap', 'Rock', 'Country', 'R&B/Soul', 'Electronic', 'Dance', 'Alternative', 'Latin', 'Reggae', 'Jazz', 'Classical', 'Blues', 'Singer/Songwriter', 'World', 'Soundtrack', 'Russian Rap', 'Russian Pop'];
 
@@ -551,6 +635,37 @@ function createMusicNotes() {
   return group;
 }
 
+function createStarfield() {
+  const group = new THREE.Group();
+  const count = 1500;
+  const geo = new THREE.BufferGeometry();
+  const positions = new Float32Array(count * 3);
+  const sizes = new Float32Array(count);
+  const depths = new Float32Array(count);
+  for (let i = 0; i < count; i++) {
+    positions[i*3] = (Math.random() - 0.5) * 120;
+    positions[i*3+1] = (Math.random() - 0.5) * 80;
+    positions[i*3+2] = (Math.random() - 0.5) * 120;
+    sizes[i] = Math.random() * 0.12 + 0.02;
+    depths[i] = Math.random();
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+  geo.setAttribute('depth', new THREE.BufferAttribute(depths, 1));
+  const mat = new THREE.PointsMaterial({
+    color: 0x9aa7d0,
+    sizeAttenuation: true,
+    transparent: true,
+    opacity: 0.8,
+    blending: THREE.AdditiveBlending,
+    vertexColors: false
+  });
+  const stars = new THREE.Points(geo, mat);
+  stars.userData = { positions, sizes, depths };
+  group.add(stars);
+  return group;
+}
+
 scene.add(new THREE.AmbientLight(0x6b7a74, 0.38));
 const dirLight = new THREE.DirectionalLight(0xfafafa, 1.1); dirLight.position.set(-25, -8, -30); scene.add(dirLight);
 const rimLight = new THREE.DirectionalLight(0xec4899, 10); rimLight.position.set(20, -3, -12); scene.add(rimLight);
@@ -563,6 +678,7 @@ const radio = createRadioMix();
 const npRing = createNowPlayingRing();
 const eqGroup = createEqualizer();
 const notesGroup = createMusicNotes();
+const starfield = createStarfield();
 scene.add(menuBar3D);
 
 // --- Web Audio API ---
@@ -587,16 +703,33 @@ function getAudioLevel() {
   return (sum / audioDataArray.length) / 255;
 }
 
-// --- UI State ---
+// --- State ---
 const menuBarIcon = document.getElementById('menuBarIcon');
 const popover = document.getElementById('popover');
 const queuePanel = document.getElementById('queue-panel');
 const queueList = document.getElementById('queueList');
 const queueCount = document.getElementById('queueCount');
+const historyPanel = document.getElementById('history-panel');
+const historyList = document.getElementById('historyList');
 const settingsPanel = document.getElementById('settings-panel');
-let popoverOpen = false; let queueOpen = false; let settingsOpen = false;
-let progress = 0.48; let playing = true; let shuffle = false; let repeat = false;
-let vol = 0.8;
+let popoverOpen = false; let queueOpen = false; let historyOpen = false; let settingsOpen = false;
+let progress = 0.48; let playing = true; let shuffle = false; let repeat = false; let vol = 0.8;
+let history = [];
+
+// Load persisted state
+try {
+  const saved = localStorage.getItem('freetube-showcase');
+  if (saved) {
+    const s = JSON.parse(saved);
+    if (s.genreIdx !== undefined) { activeIdx = s.genreIdx; }
+    if (s.theme) { document.getElementById('themeSelect').value = s.theme; }
+    if (s.quality) { document.getElementById('qualitySelect').value = s.quality; }
+    if (s.rotate !== undefined) { document.getElementById('rotateSelect').value = s.rotate ? 'on' : 'off'; }
+    if (s.bloom !== undefined) { document.getElementById('bloomSelect').value = s.bloom ? 'on' : 'off'; }
+    history = s.history || [];
+  }
+} catch (e) {}
+let activeIdx = activeIdx || 0;
 
 // Progress simulation
 const progressFill = document.getElementById('progressFill');
@@ -612,16 +745,13 @@ setInterval(() => {
   document.getElementById('menuTime').textContent = `${mins}:${secs<10?'0':''}${secs}`;
 }, 50);
 
-// Timeline scrubber
 progressTrack.addEventListener('click', (e) => {
   const rect = progressTrack.getBoundingClientRect();
-  const pct = (e.clientX - rect.left) / rect.width;
-  progress = Math.max(0, Math.min(1, pct));
+  progress = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
   progressFill.style.width = (progress * 100) + '%';
   curTime.textContent = fmt(progress * 206);
 });
 
-// Volume slider
 const volFill = document.getElementById('volFill');
 const volSlider = popover.querySelector('.vol-slider');
 volSlider.addEventListener('click', (e) => {
@@ -630,7 +760,6 @@ volSlider.addEventListener('click', (e) => {
   volFill.style.width = (vol * 100) + '%';
 });
 
-// Toggle play/pause
 function togglePlay() { playing = !playing; document.querySelector('.ctrl-btn.play').textContent = playing ? '▶' : '⏸'; }
 popover.querySelector('.ctrl-btn.play').addEventListener('click', togglePlay);
 popover.querySelectorAll('.ctrl-btn')[0].addEventListener('click', () => { progress = Math.max(0, progress - 0.15); progressFill.style.width = (progress*100)+'%; curTime.textContent = fmt(progress*206); });
@@ -639,6 +768,29 @@ popover.querySelectorAll('.ctrl-btn')[3].addEventListener('click', () => { shuff
 popover.querySelectorAll('.ctrl-btn')[4].addEventListener('click', () => { repeat = !repeat; popover.querySelectorAll('.ctrl-btn')[4].style.opacity = repeat ? 1 : 0.5; });
 
 function advanceGenre() { setActiveGenre((activeIdx + 1) % chips.length); }
+
+// History
+function addToHistory(genre, title, artist) {
+  history = history.filter(h => h.title !== title);
+  history.unshift({ genre, title, artist, time: Date.now() });
+  if (history.length > 20) history.pop();
+  saveState();
+  renderHistory();
+}
+function renderHistory() {
+  historyList.innerHTML = '';
+  history.forEach((h, i) => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.innerHTML = '<div class="thumb">🎵</div><div class="info"><div class="title">' + h.title + '</div><div class="artist">' + h.artist + ' • ' + h.genre + '</div></div>';
+    item.addEventListener('click', () => {
+      const gi = GENRES.indexOf(h.genre);
+      if (gi >= 0) setActiveGenre(gi);
+    });
+    historyList.appendChild(item);
+  });
+}
+renderHistory();
 
 // Genre chips + queue
 const genreHud = document.getElementById('genre-hud');
@@ -653,7 +805,7 @@ GENRES.forEach((g, i) => {
   genreHud.appendChild(d);
 });
 const chips = genreHud.querySelectorAll('.genre-chip');
-let activeIdx = 0; let genreTimer;
+let genreTimer;
 function buildQueue(genre) {
   const tracks = TRACKS_PER_GENRE[genre] || [];
   queueCount.textContent = tracks.length + ' tracks';
@@ -669,7 +821,7 @@ function buildQueue(genre) {
       document.getElementById('npArtist').textContent = ARTISTS[i % ARTISTS.length] + ' • ' + genre;
       progress = 0; playing = true; progressFill.style.width = '0%'; curTime.textContent = '0:00';
       clearInterval(genreTimer); genreTimer = setInterval(cycleGenre, 4000);
-      updateURL();
+      updateURL(); saveState();
     });
     queueList.appendChild(item);
   });
@@ -685,8 +837,9 @@ function setActiveGenre(i) {
   if (artImg) { artImg.src = makeArtwork(genre, tracks[0]); artImg.style.display = 'block'; emoji.style.display = 'none'; }
   progress = 0; playing = true; progressFill.style.width = '0%'; curTime.textContent = '0:00';
   buildQueue(genre);
+  addToHistory(genre, tracks[0], ARTISTS[0]);
   clearInterval(genreTimer); genreTimer = setInterval(cycleGenre, 4000);
-  updateURL();
+  updateURL(); saveState();
 }
 function cycleGenre() { setActiveGenre((activeIdx + 1) % chips.length); }
 setActiveGenre(0);
@@ -698,9 +851,14 @@ menuBarIcon.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key 
 document.addEventListener('click', (e) => { if (!popover.contains(e.target) && !menuBarIcon.contains(e.target)) { popoverOpen = false; popover.classList.remove('show'); menuBarIcon.setAttribute('aria-pressed', 'false'); } });
 
 // Queue toggle
-function toggleQueue() { queueOpen = !queueOpen; queuePanel.classList.toggle('show', queueOpen); document.getElementById('queueBtn').setAttribute('aria-pressed', String(queueOpen)); }
+function toggleQueue() { queueOpen = !queueOpen; queuePanel.classList.toggle('show', queueOpen); document.getElementById('queueBtn').setAttribute('aria-pressed', String(queueOpen)); if (queueOpen) { historyOpen = false; historyPanel.classList.remove('show'); document.getElementById('historyBtn').setAttribute('aria-pressed', 'false'); } }
 document.getElementById('queueBtn').addEventListener('click', toggleQueue);
 document.getElementById('queueBtn').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleQueue(); } });
+
+// History toggle
+function toggleHistory() { historyOpen = !historyOpen; historyPanel.classList.toggle('show', historyOpen); document.getElementById('historyBtn').setAttribute('aria-pressed', String(historyOpen)); if (historyOpen) { queueOpen = false; queuePanel.classList.remove('show'); document.getElementById('queueBtn').setAttribute('aria-pressed', 'false'); } }
+document.getElementById('historyBtn').addEventListener('click', toggleHistory);
+document.getElementById('historyBtn').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleHistory(); } });
 
 // Settings toggle
 function toggleSettings() { settingsOpen = !settingsOpen; settingsPanel.classList.toggle('show', settingsOpen); document.getElementById('settingsBtn').setAttribute('aria-pressed', String(settingsOpen)); }
@@ -745,7 +903,7 @@ document.getElementById('shareBtn').addEventListener('click', async () => {
 
 // Screenshot capture
 document.getElementById('screenshotBtn').addEventListener('click', () => {
-  renderer.render(scene, camera);
+  composer.render();
   const link = document.createElement('a');
   link.download = 'freetube-showcase.png';
   link.href = renderer.domElement.toDataURL('image/png');
@@ -759,12 +917,24 @@ document.getElementById('fullscreenBtn').addEventListener('click', () => {
   else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
 });
 
+// Help modal
+const helpModal = document.getElementById('help-modal');
+const helpBtn = document.getElementById('helpBtn');
+const closeHelp = document.getElementById('closeHelp');
+function openHelp() { helpModal.classList.add('show'); }
+function closeHelpModal() { helpModal.classList.remove('show'); }
+helpBtn.addEventListener('click', openHelp);
+closeHelp.addEventListener('click', closeHelpModal);
+helpModal.addEventListener('click', (e) => { if (e.target === helpModal) closeHelpModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeHelpModal(); });
+
 // FPS counter
 let lastTime = performance.now(); let frames = 0;
 const fpsEl = document.getElementById('fps');
+const statsEl = document.getElementById('stats');
 function updateFPS() {
   frames++; const now = performance.now();
-  if (now - lastTime >= 1000) { fpsEl.textContent = frames + ' FPS'; frames = 0; lastTime = now; }
+  if (now - lastTime >= 1000) { fpsEl.textContent = frames + ' FPS'; statsEl.innerHTML = frames + ' FPS<br>' + (renderer.info.render.triangles) + ' tris'; frames = 0; lastTime = now; }
   requestAnimationFrame(updateFPS);
 }
 updateFPS();
@@ -778,17 +948,24 @@ document.getElementById('themeSelect').addEventListener('change', (e) => {
   core.children[2].material.color.setHex(th.inner);
   core.children[3].material.color.setHex(th.torus);
   scene.children.forEach(c => { if (c.type === 'AmbientLight') c.color.setHex(th.ambient); if (c.type === 'DirectionalLight' && c.position.x < 0) c.color.setHex(th.dir); if (c.type === 'DirectionalLight' && c.position.x > 0) c.color.setHex(th.rim); if (c.type === 'PointLight') c.color.setHex(th.point); });
+  saveState();
 });
 document.getElementById('qualitySelect').addEventListener('change', (e) => {
   const q = e.target.value;
   renderer.setPixelRatio(q === 'high' ? Math.min(window.devicePixelRatio, 2) : q === 'medium' ? 1.5 : 1);
+  saveState();
 });
-document.getElementById('rotateSelect').addEventListener('change', (e) => { controls.autoRotate = e.target.value === 'on'; });
+document.getElementById('rotateSelect').addEventListener('change', (e) => { controls.autoRotate = e.target.value === 'on'; saveState(); });
 document.getElementById('audioSelect').addEventListener('change', async (e) => {
   if (e.target.value === 'microphone' && !micEnabled) {
     const ok = await initMic();
     if (!ok) { alert('Microphone access denied or unavailable.'); e.target.value = 'simulated'; }
   } else if (e.target.value === 'simulated') { micEnabled = false; }
+  saveState();
+});
+document.getElementById('bloomSelect').addEventListener('change', (e) => {
+  bloomPass.enabled = e.target.value === 'on';
+  saveState();
 });
 
 // Camera presets
@@ -812,7 +989,7 @@ document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
   if (e.key === ' ') { e.preventDefault(); togglePlay(); }
   if (e.key === 'f' || e.key === 'F') { document.getElementById('fullscreenBtn').click(); }
-  if (e.key === '?') { alert('Shortcuts: Space=Play/Pause, 1-9=Jump genre, F=Fullscreen, ?=Help'); }
+  if (e.key === '?') { openHelp(); }
   const n = parseInt(e.key);
   if (!isNaN(n) && n >= 1 && n <= GENRES.length) { setActiveGenre(n - 1); }
 });
@@ -830,6 +1007,19 @@ window.addEventListener('popstate', () => {
   if (g && GENRES.includes(g)) setActiveGenre(GENRES.indexOf(g));
 });
 (function initURL(){ const p = new URLSearchParams(window.location.search); const g = p.get('genre'); if (g && GENRES.includes(g)) setActiveGenre(GENRES.indexOf(g)); })();
+
+function saveState() {
+  try {
+    localStorage.setItem('freetube-showcase', JSON.stringify({
+      genreIdx: activeIdx,
+      theme: document.getElementById('themeSelect').value,
+      quality: document.getElementById('qualitySelect').value,
+      rotate: controls.autoRotate,
+      bloom: bloomPass.enabled,
+      history: history
+    }));
+  } catch (e) {}
+}
 
 // Artwork generator
 function makeArtwork(genre, title) {
@@ -866,7 +1056,6 @@ function tick() {
   core.scale.setScalar(pulse);
   core.children[3] && core.children[3].scale.setScalar(pulse * 1.1);
 
-  // Equalizer bars react to audio
   const bars = eqGroup.children;
   bars.forEach((bar, i) => {
     const h = 0.5 + Math.sin(t * 4 + i * 0.5) * 0.8 * audioBeat + (micLevel > 0.6 ? micLevel * 2 : 0);
@@ -875,7 +1064,6 @@ function tick() {
     bar.material.emissiveIntensity = 0.3 + h * 0.6;
   });
 
-  // Music notes float up
   notesGroup.children.forEach((note) => {
     note.position.y -= note.userData.speed;
     note.rotation.z += 0.02;
@@ -884,6 +1072,18 @@ function tick() {
     note.material.opacity = 0.3 + nBeat * 0.5 * audioBeat;
     note.scale.setScalar(0.8 + nBeat * 0.4);
   });
+
+  const stars = starfield.children[0];
+  if (stars) {
+    const pos = stars.geometry.attributes.position.array;
+    const sizes = stars.geometry.attributes.size.array;
+    const depths = stars.geometry.attributes.depth.array;
+    for (let i = 0; i < pos.length / 3; i++) {
+      pos[i*3+1] += depths[i] * 0.05 * (1 + audioBeat);
+      if (pos[i*3+1] > 40) pos[i*3+1] = -40;
+    }
+    stars.geometry.attributes.position.needsUpdate = true;
+  }
 
   genreRing.nodeData.forEach(({node, label}, i) => {
     const beat = Math.sin(t * 3 + i * 0.5) * 0.4 + 0.6;
@@ -900,7 +1100,7 @@ function tick() {
   npRing.rotation.z += 0.0038;
   rimLight.intensity = 10 + Math.sin(t * 1.4) * 3 + audioBeat * 5;
   controls.update();
-  renderer.render(scene, camera);
+  composer.render();
   updateFPS();
   requestAnimationFrame(tick);
 }
@@ -919,6 +1119,8 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+  bloomPass.setSize(window.innerWidth, window.innerHeight);
 });
 </script>
 </body>
