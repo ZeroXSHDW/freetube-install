@@ -9,7 +9,7 @@ cd "$ROOT"
 
 APP_NAME="FreeTubeInstaller"
 BUNDLE_ID="local.freetube.installer"
-VERSION="${VERSION:-1.1.0}"
+VERSION="${VERSION:-1.3.0}"
 OUT="${OUT_DIR:-$ROOT/dist}"
 
 INSTALL=0

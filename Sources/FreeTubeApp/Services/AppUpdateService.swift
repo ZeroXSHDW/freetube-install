@@ -30,7 +30,7 @@ final class AppUpdateService: ObservableObject {
 
     private init() {
         let bundleVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-        currentVersion = (bundleVersion?.isEmpty == false) ? bundleVersion! : "1.1.1"
+        currentVersion = (bundleVersion?.isEmpty == false) ? bundleVersion! : "1.3.0"
     }
 
     private func log(_ message: String) {

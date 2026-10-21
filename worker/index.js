@@ -36,9 +36,18 @@ const b64urlToBytes = (s) => {
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
 };
+const b64ToBytes = (s) => {
+  let t = s;
+  while (t.length % 4) t += '=';
+  const bin = atob(t);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+};
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 async function signLicense(payload) {
-  const keyBytes = b64urlToBytes(LICENSE_PRIVATE_KEY.replace(/-/g, '+').replace(/_/g, '/'));
+  const keyBytes = b64ToBytes(LICENSE_PRIVATE_KEY);
   const key = await crypto.subtle.importKey('pkcs8', keyBytes, { name: 'Ed25519' }, false, ['sign']);
   const sig = new Uint8Array(await crypto.subtle.sign('Ed25519', key, new TextEncoder().encode(payload)));
   return `FT1.${b64url(new TextEncoder().encode(payload))}.${b64url(sig)}`;
@@ -113,7 +122,7 @@ h1{font-size:24px;margin:0 0 8px}.s{color:#8b96b8;font-size:14px;margin-bottom:2
 button{background:linear-gradient(135deg,#fbbf24,#d97736);color:#0b1020;font-weight:700;border:0;border-radius:9px;padding:11px 22px;cursor:pointer;font-size:14px;margin:4px}
 a.dl{display:inline-block;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#eaf0ff;text-decoration:none;border-radius:9px;padding:11px 22px;font-size:14px;margin:4px}
 .note{color:#8b96b8;font-size:12px;margin-top:18px}</style></head><body>
-<div class="c"><h1>🎉 Thanks${email ? ', ' + email : ''}!</h1>
+<div class="c"><h1>🎉 Thanks${email ? ', ' + esc(email) : ''}!</h1>
 <p class="s">Your license key is below. Copy it, then paste it into the app (Extras → License → Activate).</p>
 <div class="key" id="k">${key}</div>
 <button onclick="navigator.clipboard.writeText('${key}')">Copy key</button>
@@ -155,7 +164,9 @@ export default {
       const email = session.customer_details?.email || session.customer_email || '';
       let existing = await env.LICENSES.get(`email:${email}`);
       if (existing) {
-        return new Response(redeemPage(email, existing, 0), { headers: { 'content-type': 'text/html' } });
+        let expiry = 0;
+        try { expiry = (JSON.parse(existing).expiry) || 0; } catch {}
+        return new Response(redeemPage(email, existing, expiry), { headers: { 'content-type': 'text/html' } });
       }
       const { key, expiry } = await issueLicense(email, env);
       return new Response(redeemPage(email, key, expiry), { headers: { 'content-type': 'text/html' } });
