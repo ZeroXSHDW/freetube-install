@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Install FreeTube on macOS, verify its SHA-256 digest, restore config, and
-# set up the checksum-verified auto-updater, menu bar app, and login helpers.
+# set up the checksum-verified auto-updater, native Swift app + menu bar,
+# and login helpers.
 #
 # Designed for per-user installs (no admin rights). Fully idempotent: re-running
 # is safe and only downloads/reinstalls when a newer version is available.
@@ -26,6 +27,7 @@ DRY_RUN=0
 CHECK_DEPS=0
 FORCE_REINSTALL=0
 SKIP_MENU_BAR=0
+SKIP_APP=0
 
 log() { printf '%s  %s\n' "$*" ; }
 err() { printf 'ERROR: %s\n' "$*" >&2 ; }
@@ -36,8 +38,9 @@ Usage: install.sh [options]
 
 Installs the official FreeTube macOS release (SHA-256 verified), sets up the
 auto-updater, generates the Top Charts music playlists, installs the native
-♫ menu bar app with Now Playing popover, and registers login helpers — all in
-one command. Safe to re-run (idempotent).
+Swift app (SponsorBlock auto-skip, endless queue, ♫ menu bar) plus the ♫ menu
+bar helper, and registers login helpers — all in one command. Safe to re-run
+(idempotent).
 
 Options:
   --version VERSION       Pin a version, e.g. 0.25.3 (default: latest)
@@ -53,6 +56,7 @@ Options:
   --check-deps            Verify required tools are installed (and exit)
   --force                 Reinstall even if already on the latest version
   --skip-menu-bar         Skip building/installing the ♫ menu bar app
+  --skip-app              Skip building/installing the native Swift app
   -h, --help              Show this help
 USAGE
 }
@@ -71,6 +75,7 @@ while (($#)); do
     --check-deps) CHECK_DEPS=1; shift ;;
     --force) FORCE_REINSTALL=1; shift ;;
     --skip-menu-bar) SKIP_MENU_BAR=1; shift ;;
+    --skip-app) SKIP_APP=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) err "Unknown option: $1"; usage >&2; exit 2 ;;
   esac
@@ -83,7 +88,7 @@ fi
 
 # --- Dependency checks -------------------------------------------------------
 REQUIRED_CMDS=(curl python3 hdiutil ditto codesign shasum xattr PlistBuddy)
-OPTIONAL_CMDS=(swiftc nowplaying-cli brew)
+OPTIONAL_CMDS=(swiftc swift nowplaying-cli brew)
 missing=0
 for cmd in "${REQUIRED_CMDS[@]}"; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
@@ -210,6 +215,7 @@ if ((DRY_RUN)); then
   echo "[dry-run] Would install FreeTube $VER ($ASSET_NAME) to $APP_DIR"
   echo "[dry-run] Scripts -> $SCRIPTS_DEST"
   echo "[dry-run] LaunchAgents -> $LAUNCH_DIR"
+  echo "[dry-run] Swift app: $([[ -z "$SKIP_APP" ]] && echo 'build + install FreeTubeInstaller.app' || echo 'skipped (--skip-app)')"
   echo "[dry-run] Config restore: $RESTORE_CONFIG (from $CONFIG_DIR)"
   echo "[dry-run] Launch at end: $LAUNCH"
   exit 0
@@ -373,6 +379,30 @@ if ((!SKIP_MENU_BAR)); then
   fi
 else
   log "Skipping menu bar app (--skip-menu-bar)."
+fi
+
+# --- Native Swift app (FreeTubeInstaller) ------------------------------------
+if ((!SKIP_APP)); then
+  if command -v swift >/dev/null 2>&1; then
+    log "Building native Swift app (FreeTubeInstaller.app)…"
+    if VERSION="1.1.0" "$REPO_DIR/scripts/build-app.sh" --install; then
+      APP_BIN="$APP_DIR/FreeTubeInstaller.app/Contents/MacOS/FreeTubeInstaller"
+      sed -e "s|__HOME__|$HOME|g" \
+          -e "s|__APP__|$APP_BIN|g" \
+          "$REPO_DIR/launchd/local.freetube.installer.plist.template" \
+          > "$LAUNCH_DIR/local.freetube.installer.plist"
+      launchctl bootout "gui/$UID_NUM/local.freetube.installer" 2>/dev/null || true
+      launchctl bootstrap "gui/$UID_NUM" "$LAUNCH_DIR/local.freetube.installer.plist" 2>/dev/null || true
+      launchctl enable "gui/$UID_NUM/local.freetube.installer" 2>/dev/null || true
+      log "Native Swift app installed to $APP_DIR/FreeTubeInstaller.app (♫ menu bar, SponsorBlock, endless queue)."
+    else
+      log "Warning: Swift app build failed; continuing (scripts remain available)."
+    fi
+  else
+    log "Note: swift not found; skipping native Swift app (install Xcode CLT: xcode-select --install)."
+  fi
+else
+  log "Skipping native Swift app (--skip-app)."
 fi
 
 # --- nowplaying-cli recommendation ------------------------------------------

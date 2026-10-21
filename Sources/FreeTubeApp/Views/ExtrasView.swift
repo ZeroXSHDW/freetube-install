@@ -193,6 +193,7 @@ struct ExtrasView: View {
         case .bar: return "menubar.rectangle"
         case .resume: return "clock.arrow.circlepath"
         case .audiopause: return "airpodsspatialaudio"
+        case .installer: return "sparkles"
         }
     }
 }

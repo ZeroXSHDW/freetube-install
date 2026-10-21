@@ -9,6 +9,7 @@
 #   bar          ♫ FreeTubeBar menu bar app
 #   resume       Resume last genre on login
 #   audiopause   AirPods auto-pause watcher
+#   installer    Native Swift add-on app (FreeTubeInstaller)
 #   all          All agents
 set -euo pipefail
 
@@ -21,6 +22,7 @@ AGENTS=(
   "bar:local.freetube.bar"
   "resume:local.freetube.resume"
   "audiopause:local.freetube.audiopause"
+  "installer:local.freetube.installer"
 )
 
 usage() {
@@ -33,7 +35,7 @@ Commands:
   status   [agent]  Show whether a LaunchAgent is loaded (or 'all')
   restart  [agent]  Restart a LaunchAgent (or 'all')
 
-Agents: autoupdate, topmusic, bar, resume, audiopause, all
+Agents: autoupdate, topmusic, bar, resume, audiopause, installer, all
 USAGE
   exit 0
 }
@@ -129,7 +131,7 @@ esac
 
 AGENT_NAME="$(resolve_agent "$AGENT_INPUT")" || {
   echo "Unknown agent: $AGENT_INPUT" >&2
-  echo "Available: autoupdate, topmusic, bar, resume, audiopause, all" >&2
+  echo "Available: autoupdate, topmusic, bar, resume, audiopause, installer, all" >&2
   exit 2
 }
 

@@ -6,6 +6,7 @@ enum LaunchAgentName: String, CaseIterable, Identifiable, Codable {
     case bar = "local.freetube.bar"
     case resume = "local.freetube.resume"
     case audiopause = "local.freetube.audiopause"
+    case installer = "local.freetube.installer"
 
     var id: String { rawValue }
 
@@ -16,6 +17,7 @@ enum LaunchAgentName: String, CaseIterable, Identifiable, Codable {
         case .bar: return "♫ FreeTubeBar Menu Bar"
         case .resume: return "Resume on Login"
         case .audiopause: return "AirPods Auto-Pause"
+        case .installer: return "Native Swift Add-On"
         }
     }
 
@@ -26,6 +28,7 @@ enum LaunchAgentName: String, CaseIterable, Identifiable, Codable {
         case .bar: return "Menu bar app with Now Playing popover"
         case .resume: return "Resumes last played genre on login"
         case .audiopause: return "Pauses FreeTube when headphones removed"
+        case .installer: return "FreeTubeInstaller app (SponsorBlock, endless queue, ♫ menu bar)"
         }
     }
 }

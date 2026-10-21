@@ -74,7 +74,7 @@ The default install:
 - Places `FreeTube.app` in `~/Applications` (no admin password needed).
 - Writes a tuned base config (or restores `../freetube-configs-main` if present).
 - Generates the **18 Top Charts music playlists** immediately.
-- Installs the auto-updater, Top Charts updater, menu bar app, and resume helper.
+- Installs the auto-updater, Top Charts updater, native Swift app, menu bar app, and resume helper.
 - Launches FreeTube.
 
 Options:
@@ -86,6 +86,8 @@ Options:
 ./install.sh --config-dir /path/to/config
 ./install.sh --skip-charts               # don't generate Top Charts playlists now
 ./install.sh --menu-bar-now-playing      # show Now Playing in the menu bar
+./install.sh --skip-menu-bar             # skip the ♫ menu bar helper
+./install.sh --skip-app                  # skip building the native Swift app
 ./install.sh --no-launch
 ```
 
