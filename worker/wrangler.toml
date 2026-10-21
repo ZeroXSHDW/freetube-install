@@ -1,0 +1,22 @@
+name = "freetube-license"
+main = "index.js"
+compatibility_date = "2024-11-01"
+
+# Create the KV namespace and paste its id here:
+#   wrangler kv namespace create LICENSES
+[[kv_namespaces]]
+binding = "LICENSES"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[vars]
+# If you have a Stripe Price object, set its id (price_…). Otherwise the worker
+# creates an inline one-time price from AMOUNT_CENTS + CURRENCY.
+PRICE_ID = ""
+CURRENCY = "eur"
+AMOUNT_CENTS = "500"      # €5.00
+EXPIRY_DAYS = "0"         # 0 = lifetime
+
+# SECRETS — do NOT put these here. Set them with:
+#   wrangler secret put STRIPE_SECRET_KEY
+#   wrangler secret put STRIPE_WEBHOOK_SECRET
+#   wrangler secret put LICENSE_PRIVATE_KEY

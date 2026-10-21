@@ -9,9 +9,11 @@ final class ExtrasViewModel: ObservableObject {
     let doctor = DoctorService.shared
     let launchAgents = LaunchAgentService.shared
     let appUpdate = AppUpdateService.shared
+    let license = LicenseService.shared
 
     @Published var statusLine: String?
     @Published var confirmation: String?
+    @Published var licenseInput = ""
 
     // MARK: - SponsorBlock
 
@@ -98,5 +100,21 @@ final class ExtrasViewModel: ObservableObject {
                 statusLine = "Update failed: \(error)"
             }
         }
+    }
+
+    // MARK: - License
+
+    func activateLicense() {
+        if license.activate(licenseInput) {
+            statusLine = "License activated — \(license.statusText)"
+        } else {
+            statusLine = "Invalid license key"
+        }
+    }
+
+    func deactivateLicense() {
+        license.deactivate()
+        licenseInput = ""
+        statusLine = "License removed"
     }
 }

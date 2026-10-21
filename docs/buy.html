@@ -18,7 +18,14 @@
      ============================================================ -->
 <script>
   window.FREETUBE_PRICING = {
+    // Stripe Payment Link (works immediately; delivers the download, no key).
     paymentLink: 'https://buy.stripe.com/8x29AU6OY0z3bsF0MB14402',
+
+    // Optional: your Cloudflare Worker URL (worker/index.js). When set, "Buy now"
+    // uses Stripe Checkout through the worker and delivers a LICENSE KEY the app
+    // can verify (Extras → License → Activate). Leave empty to use the Payment Link.
+    licenseServer: '',
+
     priceLabel:  '€5',
     productName: 'FreeTubeInstaller Pro',
   };
@@ -196,14 +203,34 @@
 </footer>
 
 <script>
-  // Wire every "Buy now" button to the Stripe Payment Link configured above.
+  // Wire every "Buy now" button. If a license server (Cloudflare Worker) is
+  // configured, use Stripe Checkout through it (delivers a license key);
+  // otherwise fall back to the Stripe Payment Link.
   document.addEventListener('DOMContentLoaded', function () {
     var cfg = window.FREETUBE_PRICING || {};
     var link = cfg.paymentLink || '';
+    var server = cfg.licenseServer || '';
     var isPlaceholder = !link || link.indexOf('REPLACE_ME') !== -1;
+
     document.querySelectorAll('.js-buy').forEach(function (a) {
-      a.href = isPlaceholder ? 'https://github.com/ZeroXSHDW/freetube-install' : link;
-      if (isPlaceholder) a.textContent = 'Build free from source';
+      if (server) {
+        a.href = '#';
+        a.addEventListener('click', function (e) {
+          e.preventDefault();
+          a.textContent = 'Redirecting…';
+          fetch(server.replace(/\/$/, '') + '/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+          })
+            .then(function (r) { return r.json(); })
+            .then(function (data) { if (data.url) window.location.href = data.url; else alert('Checkout unavailable'); })
+            .catch(function () { alert('Checkout unavailable'); });
+        });
+      } else {
+        a.href = isPlaceholder ? 'https://github.com/ZeroXSHDW/freetube-install' : link;
+        if (isPlaceholder) a.textContent = 'Build free from source';
+      }
     });
   });
 </script>

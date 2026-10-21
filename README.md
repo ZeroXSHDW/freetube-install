@@ -63,6 +63,22 @@ buttons gracefully fall back to "Build free" (pointing at the repo).
 > installer + lifetime updates), not FreeTube itself. The page states this and links the
 > free source, so buyers always have the no-cost option.
 
+### License keys (Pro unlock)
+
+For actual license keys, the repo ships a serverless backend and an in-app verifier:
+
+- **`worker/`** — a Cloudflare Worker that creates Stripe Checkout sessions, receives
+  the `checkout.session.completed` webhook, and issues **Ed25519-signed license keys**
+  (form `FT1.<payload>.<signature>`). See `worker/README.md` for the 8-step deploy.
+- **`Sources/FreeTubeApp/Services/LicenseService.swift`** — verifies keys **offline**
+  with the matching public key (CryptoKit), so the app never phones home after purchase.
+- **`scripts/gen-license-keypair.swift`** — generates the keypair (public → app,
+  private → Worker secret).
+- **In-app** — Extras → **License / Pro** lets the buyer paste their key and see Pro status.
+
+Set `licenseServer` in `docs/buy.html` to route "Buy now" through the Worker (delivers a
+key); leave it empty to keep using the Payment Link (download only).
+
 ## Why this exists
 
 FreeTube's macOS builds are **ad-hoc signed, not notarized**, so the Homebrew cask is disabled and Gatekeeper blocks the app by default. This installer:

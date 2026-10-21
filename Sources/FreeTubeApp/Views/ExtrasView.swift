@@ -109,6 +109,42 @@ struct ExtrasView: View {
                 .background(Color.gray.opacity(0.08))
                 .cornerRadius(10)
 
+                // License / Pro
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Image(systemName: "key.fill")
+                            .foregroundStyle(.yellow)
+                        Text("License / Pro")
+                            .font(.headline)
+                        Spacer()
+                        Text(viewModel.license.isPro ? "PRO ✓" : "Free")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(viewModel.license.isPro ? .green : .secondary)
+                    }
+                    TextField("Paste license key (FT1.…)", text: $viewModel.licenseInput)
+                        .textFieldStyle(.roundedBorder)
+                    HStack(spacing: 10) {
+                        Button("Activate") { viewModel.activateLicense() }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(viewModel.licenseInput.isEmpty)
+                        if viewModel.license.isPro {
+                            Button("Remove") { viewModel.deactivateLicense() }
+                                .buttonStyle(.bordered)
+                        }
+                        Spacer()
+                    }
+                    Text(viewModel.license.statusText)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text("Buy a license at zeroxshdw.github.io/freetube-install/buy.html")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .padding()
+                .background(Color.gray.opacity(0.08))
+                .cornerRadius(10)
+
                 // Self-update (the add-on itself)
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
