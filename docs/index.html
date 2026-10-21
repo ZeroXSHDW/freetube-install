@@ -1173,6 +1173,15 @@ function tick() {
   requestAnimationFrame(tick);
 }
 
+// Register service worker for PWA offline support
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').then((reg) => {
+    console.log('Service Worker registered:', reg.scope);
+  }).catch((err) => {
+    console.log('Service Worker registration failed:', err);
+  });
+}
+
 // Remove loader after first frame
 setTimeout(() => { document.getElementById('loader').classList.add('hidden'); }, 800);
 try {
