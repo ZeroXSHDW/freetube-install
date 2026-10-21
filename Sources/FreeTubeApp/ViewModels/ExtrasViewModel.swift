@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import AppKit
 
 @MainActor
 final class ExtrasViewModel: ObservableObject {
@@ -116,5 +117,28 @@ final class ExtrasViewModel: ObservableObject {
         license.deactivate()
         licenseInput = ""
         statusLine = "License removed"
+    }
+
+    /// Opens the buy page in the default browser.
+    func openBuyPage() {
+        if let url = URL(string: "https://zeroxshdw.github.io/freetube-install/buy.html") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    /// Pre-fills the license field from the clipboard and auto-activates a
+    /// pasted `FT1.…` key.
+    func pasteLicense() {
+        let text = NSPasteboard.general.string(forType: .string) ?? ""
+        guard !text.isEmpty else {
+            statusLine = "Clipboard is empty — copy the license key first"
+            return
+        }
+        licenseInput = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if licenseInput.hasPrefix("FT1.") {
+            activateLicense()
+        } else {
+            statusLine = "Pasted — tap Activate to verify"
+        }
     }
 }

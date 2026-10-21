@@ -3,14 +3,27 @@ import SwiftUI
 struct NowPlayingView: View {
     @ObservedObject var viewModel = NowPlayingViewModel.shared
     @ObservedObject var sponsor = SponsorBlockService.shared
+    @ObservedObject var license = LicenseService.shared
 
     var body: some View {
         VStack(spacing: 0) {
             // Header
             VStack(alignment: .leading, spacing: 8) {
-                Text("Now Playing")
-                    .font(.title2)
-                    .fontWeight(.bold)
+                HStack {
+                    Text("Now Playing")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    if license.isPro {
+                        Text("PRO")
+                            .font(.system(size: 10, weight: .bold))
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(Color.orange.opacity(0.18))
+                            .foregroundStyle(.orange)
+                            .clipShape(Capsule())
+                    }
+                    Spacer()
+                }
                 Text("FreeTube plays; this app switches tracks, hearts them, skips sponsors and keeps the queue endless.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)

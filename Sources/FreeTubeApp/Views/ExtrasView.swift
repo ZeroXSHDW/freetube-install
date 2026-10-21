@@ -124,21 +124,27 @@ struct ExtrasView: View {
                     }
                     TextField("Paste license key (FT1.…)", text: $viewModel.licenseInput)
                         .textFieldStyle(.roundedBorder)
-                    HStack(spacing: 10) {
+                    HStack(spacing: 8) {
                         Button("Activate") { viewModel.activateLicense() }
                             .buttonStyle(.borderedProminent)
                             .disabled(viewModel.licenseInput.isEmpty)
+                        Button("Paste") { viewModel.pasteLicense() }
+                            .buttonStyle(.bordered)
                         if viewModel.license.isPro {
                             Button("Remove") { viewModel.deactivateLicense() }
                                 .buttonStyle(.bordered)
                         }
                         Spacer()
+                        Button {
+                            viewModel.openBuyPage()
+                        } label: {
+                            Label("Get Pro", systemImage: "cart.fill")
+                        }
+                        .buttonStyle(.bordered)
+                        .foregroundStyle(.orange)
                     }
                     Text(viewModel.license.statusText)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text("Buy a license at zeroxshdw.github.io/freetube-install/buy.html")
-                        .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
                 .padding()

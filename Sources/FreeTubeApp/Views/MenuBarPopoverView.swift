@@ -6,6 +6,7 @@ import AppKit
 struct MenuBarPopoverView: View {
     @ObservedObject var nowPlaying = NowPlayingViewModel.shared
     @ObservedObject var playlist = PlaylistService.shared
+    @ObservedObject var license = LicenseService.shared
 
     private var quickGenres: [Genre] {
         Array(Genre.allGenres.filter { $0.name != "Radio Mix" }.prefix(6))
@@ -42,6 +43,15 @@ struct MenuBarPopoverView: View {
                         .lineLimit(1)
                 }
                 Spacer()
+                if license.isPro {
+                    Text("PRO")
+                        .font(.system(size: 9, weight: .bold))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.orange.opacity(0.18))
+                        .foregroundStyle(.orange)
+                        .clipShape(Capsule())
+                }
             }
 
             // Progress
