@@ -599,6 +599,7 @@ cd ~/Downloads/freetube-install &amp;&amp; swift build
 
 # Launch
 open ~/Applications/FreeTubeInstaller.app</pre>
+      <p style="margin:12px 0 0; font-size:10.5px; color:#8b96b8; line-height:1.4;">🔐 <b>Gatekeeper note:</b> the app is ad-hoc signed (like FreeTube itself). First launch: right-click → <b>Open</b>, or <code style="color:#cbd5e1;">xattr -dr com.apple.quarantine ~/Applications/FreeTubeInstaller.app</code>. The release zip includes a one-click <code>Install FreeTubeInstaller.command</code> that does this for you.</p>
     </div>
   </div>
 
@@ -901,7 +902,7 @@ volSlider.addEventListener('click', (e) => {
 
 function togglePlay() { playing = !playing; document.querySelector('.ctrl-btn.play').textContent = playing ? '▶' : '⏸'; }
 popover.querySelector('.ctrl-btn.play').addEventListener('click', togglePlay);
-popover.querySelectorAll('.ctrl-btn')[0].addEventListener('click', () => { progress = Math.max(0, progress - 0.15); progressFill.style.width = (progress*100)+'%; curTime.textContent = fmt(progress*206); });
+popover.querySelectorAll('.ctrl-btn')[0].addEventListener('click', () => { progress = Math.max(0, progress - 0.15); progressFill.style.width = (progress*100)+'%'; curTime.textContent = fmt(progress*206); });
 popover.querySelectorAll('.ctrl-btn')[2].addEventListener('click', advanceGenre);
 popover.querySelectorAll('.ctrl-btn')[3].addEventListener('click', () => { shuffle = !shuffle; popover.querySelectorAll('.ctrl-btn')[3].style.opacity = shuffle ? 1 : 0.5; });
 popover.querySelectorAll('.ctrl-btn')[4].addEventListener('click', () => { repeat = !repeat; popover.querySelectorAll('.ctrl-btn')[4].style.opacity = repeat ? 1 : 0.5; });

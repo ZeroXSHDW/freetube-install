@@ -32,19 +32,20 @@ jobs:
       - name: Assemble app bundle
         env:
           OUT_DIR: ${{ github.workspace }}/dist
-        run: ./scripts/build-app.sh
+        run: ./scripts/build-app.sh --dist
 
       - name: Verify bundle
         run: |
           test -d dist/FreeTubeInstaller.app/Contents/MacOS
           test -f dist/FreeTubeInstaller.app/Contents/Info.plist
+          test -f "dist/FreeTubeInstaller-macOS/Install FreeTubeInstaller.command"
           codesign --verify --deep --strict dist/FreeTubeInstaller.app
           echo "App bundle OK"
 
       - name: Package zip
         run: |
           cd dist
-          zip -r -q FreeTubeInstaller-macOS.zip FreeTubeInstaller.app
+          zip -r -q FreeTubeInstaller-macOS.zip FreeTubeInstaller-macOS
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -59,3 +60,15 @@ jobs:
         with:
           files: dist/FreeTubeInstaller-macOS.zip
           generate_release_notes: true
+          body: |
+            > ⚠️ **Ad-hoc signed** (like FreeTube itself). On first launch use the included
+            > `Install FreeTubeInstaller.command`, or run:
+            >
+            > ```
+            > xattr -dr com.apple.quarantine ~/Applications/FreeTubeInstaller.app
+            > open ~/Applications/FreeTubeInstaller.app
+            > ```
+            >
+            > Or right-click the app → **Open**.
+            >
+            > See `README.txt` inside the zip for full install instructions.

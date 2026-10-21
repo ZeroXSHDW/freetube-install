@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # build-app.sh — assemble a proper FreeTubeInstaller.app bundle from the
-# Swift package, ad-hoc code-sign it, and (optionally) install to ~/Applications.
+# Swift package, ad-hoc code-sign it, and (optionally) install to ~/Applications
+# or build a distributable folder with a one-click Gatekeeper-friendly installer.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -10,7 +11,15 @@ APP_NAME="FreeTubeInstaller"
 BUNDLE_ID="local.freetube.installer"
 VERSION="${VERSION:-1.1.0}"
 OUT="${OUT_DIR:-$ROOT/dist}"
-INSTALL_TO_HOME="${1:-}"
+
+INSTALL=0
+MAKE_DIST=0
+for arg in "$@"; do
+  case "$arg" in
+    --install) INSTALL=1 ;;
+    --dist) MAKE_DIST=1 ;;
+  esac
+done
 
 echo "▶ Building release binary (Swift package)…"
 swift build -c release --product "$APP_NAME"
@@ -51,14 +60,54 @@ PLIST
 echo "▶ Ad-hoc code signing…"
 codesign --force --deep --sign - "$APP" 2>/dev/null || echo "⚠ codesign skipped (non-fatal)"
 
-if [[ "$INSTALL_TO_HOME" == "--install" ]]; then
+if ((INSTALL)); then
   DEST="$HOME/Applications/$APP_NAME.app"
   echo "▶ Installing to $DEST"
   mkdir -p "$HOME/Applications"
   rm -rf "$DEST"
   cp -R "$APP" "$DEST"
   xattr -dr com.apple.quarantine "$DEST" 2>/dev/null || true
+  codesign --force --deep --sign - "$DEST" >/dev/null 2>&1 || true
   echo "✓ Installed. Open it from Finder or: open \"$DEST\""
+fi
+
+if ((MAKE_DIST)); then
+  DIST="$OUT/$APP_NAME-macOS"
+  echo "▶ Building distribution folder $DIST"
+  rm -rf "$DIST"
+  mkdir -p "$DIST"
+  cp -R "$APP" "$DIST/$APP_NAME.app"
+  cp "$ROOT/scripts/install-app.sh" "$DIST/Install FreeTubeInstaller.command"
+  chmod +x "$DIST/Install FreeTubeInstaller.command"
+  cat > "$DIST/README.txt" <<EOF
+FreeTubeInstaller $VERSION — native Swift add-on for FreeTube
+==============================================================
+
+What this is
+  A single .app that installs/updates FreeTube, plays 18 Top Charts genres,
+  auto-skips SponsorBlock segments, keeps an endless queue, syncs your FreeTube
+  library, backs up your data, and lives in the menu bar (♫).
+
+How to install
+  1) Double-click "Install FreeTubeInstaller.command"  —  this clears the
+     Gatekeeper quarantine flag, copies the app to ~/Applications, and opens it.
+
+     If macOS asks, right-click the file and choose "Open" (or run it from
+     Terminal:  ./Install\ FreeTubeInstaller.command).
+
+  2) Alternatively, drag "FreeTubeInstaller.app" to Applications, then run:
+        xattr -dr com.apple.quarantine ~/Applications/FreeTubeInstaller.app
+        open ~/Applications/FreeTubeInstaller.app
+
+Why Gatekeeper warns
+  FreeTubeInstaller is ad-hoc signed (it has no paid Apple Developer ID), exactly
+  like FreeTube's own macOS releases. The command above removes the quarantine
+  attribute macOS adds to downloaded files, which is all that's needed.
+
+Build from source
+  cd freetube-install && ./scripts/build-app.sh --install
+EOF
+  echo "✓ Distribution folder ready: $DIST"
 fi
 
 echo "✓ Done: $APP"
