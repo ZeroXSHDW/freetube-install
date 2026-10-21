@@ -13,7 +13,6 @@ SCRIPTS_DEST="$HOME/Library/Scripts"
 LAUNCH_DIR="$HOME/Library/LaunchAgents"
 SUPPORT_DIR="$HOME/Library/Application Support/FreeTube"
 BAR_DIR="$HOME/Library/Application Support/FreeTubeBar"
-LOG_DIR="$HOME/Library/Logs"
 APP_DIR="$HOME/Applications"
 
 VERSION="latest"
@@ -29,7 +28,7 @@ FORCE_REINSTALL=0
 SKIP_MENU_BAR=0
 SKIP_APP=0
 
-log() { printf '%s  %s\n' "$*" ; }
+log() { printf '  %s\n' "$*"; }
 err() { printf 'ERROR: %s\n' "$*" >&2 ; }
 
 usage() {

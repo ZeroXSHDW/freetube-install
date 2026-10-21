@@ -33,7 +33,6 @@ while (($#)); do
 done
 
 MANIFEST="$HOME/Library/Application Support/FreeTube/top-charts.json"
-STATE="$HOME/Library/Application Support/FreeTube/last-genre.json"
 
 if [[ ! -f "$MANIFEST" ]]; then
   echo "No Top Charts manifest at $MANIFEST. Run update-top-music.sh first." >&2
@@ -54,7 +53,7 @@ PY
 fi
 
 # --- Resolve playlist + first video ------------------------------------------
-read -r PID FIRST NAME <<< "$(python3 - "$MANIFEST" "$ARG" "$RESUME" "$SHUFFLE_ALL" <<'PY'
+read -r PID FIRST NAME <<< "$(python3 - "$MANIFEST" "$ARG" "$RESUME" "$SHUFFLE_ALL" "$RANDOM_VID" <<'PY'
 import json, pathlib, sys, random
 manifest = pathlib.Path(sys.argv[1])
 arg = sys.argv[2].strip().lower()
@@ -89,7 +88,7 @@ for entry in data:
 print("", "", "", "")
 sys.exit(1)
 PY
-)" "$RANDOM_VID"
+)"
 
 if [[ -z "$PID" || -z "$FIRST" ]]; then
   echo "No Top Charts playlist matches '$ARG'." >&2
