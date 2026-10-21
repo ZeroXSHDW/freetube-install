@@ -9,6 +9,7 @@
 <meta property="og:type" content="website" />
 <meta property="og:image" content="https://zeroxshdw.github.io/freetube-install/og.png" />
 <meta property="og:url" content="https://zeroxshdw.github.io/freetube-install/" />
+<meta name="twitter:card" content="summary_large_image" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23fefefe' /><path d='M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z' fill='%230f192f' /></svg>"/>
 <style>
   :root {
@@ -87,6 +88,25 @@
   .ctrl-btn:active { transform:scale(.92); }
   .ctrl-btn.play { background:linear-gradient(135deg,#22c55e,#15803d); color:#fff; box-shadow:0 4px 14px rgba(34,197,94,0.35); }
 
+  /* Queue panel */
+  #queue-panel {
+    position: fixed; right: 20px; top: 110px; width: 280px; max-width: 90vw;
+    background: linear-gradient(180deg, rgba(17,24,39,0.92), rgba(17,24,39,0.85));
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.45); backdrop-filter: blur(20px); z-index: 60;
+    opacity: 0; visibility: hidden; transition: opacity .25s ease, transform .25s ease; transform: translateX(20px);
+  }
+  #queue-panel.show { opacity: 1; visibility: visible; transform: translateX(0); }
+  .queue-header { display:flex; align-items:center; gap:8px; margin-bottom:10px; font-size:11px; font-weight:600; color:#cbd5e1; text-transform:uppercase; letter-spacing:.5px; }
+  .queue-list { max-height: 220px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
+  .queue-item { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; margin-bottom:6px; cursor:pointer; transition:all .15s; font-size:11px; }
+  .queue-item:hover { background:rgba(255,255,255,0.06); }
+  .queue-item.active { background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.3); }
+  .queue-item .thumb { width:32px; height:32px; border-radius:6px; background:linear-gradient(135deg,#1f2937,#374151); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:14px; border:1px solid rgba(255,255,255,0.05); }
+  .queue-item .info { flex:1; min-width:0; }
+  .queue-item .title { font-weight:600; color:#eaf0ff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.1; }
+  .queue-item .artist { font-size:9.5px; color:#94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
   /* Genre HUD */
   .hud { position:fixed; z-index:40; pointer-events:none; }
   #genre-hud { left:50%; top:68px; transform:translateX(-50%); display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
@@ -126,6 +146,13 @@
   .close-btn { position:absolute; top:16px; right:16px; background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer; padding:4px; }
   .close-btn:hover { color:#fff; }
 
+  /* FPS counter */
+  #fps { position:fixed; left:10px; top:10px; color:#71717a; font-size:10px; z-index:50; font-family:ui-monospace, monospace; pointer-events:none; }
+
+  /* Tooltip */
+  .tooltip { position:fixed; background:rgba(0,0,0,0.8); color:#fff; padding:4px 8px; border-radius:4px; font-size:11px; pointer-events:none; z-index:200; opacity:0; transition:opacity .2s; white-space:nowrap; }
+  .tooltip.show { opacity:1; }
+
   .controls { position:fixed; left:20px; bottom:20px; color:var(--muted); font-size:11px; z-index:5; letter-spacing:.4px; text-transform:uppercase; }
   .status-badge { position:fixed; right:20px; bottom:20px; color:#79c0ff; font-size:11px; border:1px solid rgba(121,192,255,0.22); background:rgba(3,6,14,0.85); padding:4px 10px; border-radius:12px; backdrop-filter:blur(8px); box-shadow:0 6px 20px rgba(0,0,0,0.35); z-index:5; display:flex; align-items:center; gap:5px; letter-spacing:.4px; cursor:help; }
   .status-badge svg { width:11px; height:11px; fill:currentColor; flex-shrink:0; }
@@ -148,6 +175,9 @@
     .np-artist { font-size: 10px; }
     .np-controls { gap: 10px; }
     .ctrl-btn { width: 32px; height: 32px; font-size: 12px; }
+
+    #queue-panel { right: 12px; top: 56px; width: 88vw; }
+    .queue-item { font-size: 10px; }
 
     .cta { bottom: 22px; gap: 8px; padding: 0 12px; }
     .cta-btn { font-size: 12px; padding: 8px 16px; }
@@ -179,6 +209,9 @@
 </head>
 <body>
   <canvas id="scene"></canvas>
+
+  <!-- Tooltip -->
+  <div id="tooltip" class="tooltip"></div>
 
   <!-- macOS menu bar -->
   <div id="menu-bar" role="menubar" aria-label="macOS menu bar">
@@ -215,6 +248,12 @@
     </div>
   </div>
 
+  <!-- Queue panel -->
+  <div id="queue-panel" role="region" aria-label="Up next">
+    <div class="queue-header">📋 Up Next <span id="queueCount">0 tracks</span></div>
+    <div class="queue-list" id="queueList"></div>
+  </div>
+
   <!-- Genre HUD -->
   <div id="genre-hud" class="hud" aria-label="Genre charts"></div>
   <div id="status-hud" class="hud" aria-live="polite">
@@ -231,10 +270,12 @@
       <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11H3V9zm14.5 6c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm-9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
       Get FreeTube at freetubeapp.io
     </a>
+    <button class="cta-btn cta-outline" id="queueBtn" title="Toggle queue panel">📋 Queue</button>
     <button class="cta-btn cta-outline" id="embedBtn" title="Get embed code for your site">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect width="18" height="12" x="3" y="3" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M21 3v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3z"/></svg>
       Embed
     </button>
+    <button class="cta-btn cta-outline" id="screenshotBtn" title="Download screenshot">📸 Capture</button>
   </div>
 
   <div class="controls">Drag to rotate · Scroll to zoom</div>
@@ -258,6 +299,8 @@
       </div>
     </div>
   </div>
+
+  <div id="fps">0 FPS</div>
 
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
@@ -312,19 +355,23 @@ function createCore() {
 
 function createGenreRing() {
   const ring = new THREE.Group();
+  const nodeData = [];
   GENRES.forEach((name, i) => {
     const angle = (i / GENRES.length) * Math.PI * 2;
     const x = Math.cos(angle) * 7.3; const z = Math.sin(angle) * 7.3; const y = Math.sin(angle * 4) * 2.2;
     const color = new THREE.Color().setHSL(i / GENRES.length, 0.88, 0.6);
     const node = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.82, 0.82), new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.4 }));
     node.position.set(x, y, z);
+    node.userData = { angle, baseY: y, baseColor: color, baseEmissive: color.clone() };
     ring.add(node);
     const label = makeTextSprite(name);
     label.position.set(x, y + 1.25, z);
+    label.userData = { angle, baseY: y };
     ring.add(label);
+    nodeData.push({ node, label });
   });
   scene.add(ring);
-  return ring;
+  return { ring, nodeData };
 }
 
 function createMenuBar3D() {
@@ -359,20 +406,54 @@ const rimLight = new THREE.DirectionalLight(0xec4899, 10); rimLight.position.set
 const pointLight = new THREE.PointLight(0x22d3ee, 45, 50); pointLight.position.set(-18, 14, -45); scene.add(pointLight);
 
 const core = createCore();
-const genres = createGenreRing();
+const genreRing = createGenreRing();
 const menuBar3D = createMenuBar3D();
 const radio = createRadioMix();
 const npRing = createNowPlayingRing();
 scene.add(menuBar3D);
 
+// --- Data ---
+const TRACKS_PER_GENRE = {
+  'Pop': ['Blinding Lights', 'Levitating', 'As It Was', 'About Damn Time'],
+  'Hip-Hop/Rap': ['Industry Baby', 'Montero', 'Savage', 'Rockstar'],
+  'Rock': ['Medium Rare', 'Shameika', 'The Less I Know', 'Dreams'],
+  'Country': ['Tennessee Whiskey', 'Wasted on You', 'Sand in My Boots', 'Buy Dirt'],
+  'R&B/Soul': ['Leave The Door Open', 'Peaches', 'Slow Down', 'Best Part'],
+  'Electronic': ['Midnight City', 'Strobe', 'Adagio for Strings', 'Silence'],
+  'Dance': ['Hot Stuff', 'I Feel Love', 'Celebration', 'Rhythm Is Gonna Get You'],
+  'Alternative': ['Mr. Brightside', 'Boulevard of Broken Dreams', 'Creep', 'Seven Nation Army'],
+  'Latin': ['Despacito', 'Mi Gente', 'Dákiti', 'Hawái'],
+  'Reggae': ['Three Little Birds', 'Could You Be Loved', 'One Love', 'Redemption Song'],
+  'Jazz': ['Take Five', 'So What', 'Round Midnight', 'Blue Train'],
+  'Classical': ['Symphony No. 5', 'The Four Seasons', 'Moonlight Sonata', 'Canon in D'],
+  'Blues': ['The Thrill Is Gone', 'Stormy Monday', 'Sweet Home Chicago', 'Cross Road Blues'],
+  'Singer/Songwriter': ['Fast Car', 'Landslide', 'Fire and Rain', 'A Case of You'],
+  'World': ['Waka Waka', 'Jai Ho', 'Bailando', 'Dragostea Din Tei'],
+  'Soundtrack': ['Star Wars Theme', 'Hedwig Theme', 'Imperial March', 'Let It Go'],
+  'Russian Rap': ['Оймо', 'Иноагент', 'Чёрный бумер', 'Серебряный дождь'],
+  'Russian Pop': ['Синие глаза', 'Майнкрафт', 'Луна', 'Колыбельная']
+};
+
+const ARTISTS = ['Artist One', 'Artist Two', 'Artist Three', 'Artist Four', 'Artist Five'];
+
 // --- UI Logic ---
 const menuBarIcon = document.getElementById('menuBarIcon');
 const popover = document.getElementById('popover');
+const queuePanel = document.getElementById('queue-panel');
+const queueList = document.getElementById('queueList');
+const queueCount = document.getElementById('queueCount');
 let popoverOpen = false;
+let queueOpen = false;
+
 function togglePopover() { popoverOpen = !popoverOpen; popover.classList.toggle('show', popoverOpen); menuBarIcon.setAttribute('aria-pressed', String(popoverOpen)); }
 menuBarIcon.addEventListener('click', togglePopover);
 menuBarIcon.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePopover(); } });
 document.addEventListener('click', (e) => { if (!popover.contains(e.target) && !menuBarIcon.contains(e.target)) { popoverOpen = false; popover.classList.remove('show'); menuBarIcon.setAttribute('aria-pressed', 'false'); } });
+
+function toggleQueue() { queueOpen = !queueOpen; queuePanel.classList.toggle('show', queueOpen); queueBtn.setAttribute('aria-pressed', String(queueOpen)); }
+const queueBtn = document.getElementById('queueBtn');
+queueBtn.addEventListener('click', toggleQueue);
+queueBtn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleQueue(); } });
 
 // Progress simulation
 let progress = 0.48; let playing = true;
@@ -388,29 +469,52 @@ setInterval(() => {
   document.getElementById('menuTime').textContent = `${mins}:${secs<10?'0':''}${secs}`;
 }, 50);
 
-// Genre chips + active cycling + clickable
+// Genre chips + queue
 const genreHud = document.getElementById('genre-hud');
 GENRES.forEach((g, i) => {
   const d = document.createElement('div');
   d.className = 'genre-chip';
   d.textContent = g;
-  d.setAttribute('role', 'button');
-  d.setAttribute('tabindex', '0');
-  d.setAttribute('aria-label', `Play ${g} genre`);
+  d.setAttribute('role', 'button'); d.setAttribute('tabindex', '0'); d.setAttribute('aria-label', `Play ${g} genre`);
   d.addEventListener('click', () => setActiveGenre(i));
   d.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveGenre(i); } });
+  d.addEventListener('mouseenter', () => { showTooltip(d, g); });
+  d.addEventListener('mouseleave', () => { hideTooltip(); });
   genreHud.appendChild(d);
 });
 const chips = genreHud.querySelectorAll('.genre-chip');
 let activeIdx = 0; let genreTimer;
+function buildQueue(genre) {
+  const tracks = TRACKS_PER_GENRE[genre] || [];
+  queueCount.textContent = tracks.length + ' tracks';
+  queueList.innerHTML = '';
+  tracks.forEach((title, i) => {
+    const item = document.createElement('div');
+    item.className = 'queue-item' + (i === 0 ? ' active' : '');
+    item.innerHTML = '<div class="thumb">🎵</div><div class="info"><div class="title">' + title + '</div><div class="artist">' + ARTISTS[i % ARTISTS.length] + ' • ' + genre + '</div></div>';
+    item.addEventListener('click', () => {
+      chips.forEach((c, idx) => c.classList.toggle('active', idx === i));
+      activeIdx = i;
+      document.getElementById('npTitle').textContent = title;
+      document.getElementById('npArtist').textContent = ARTISTS[i % ARTISTS.length] + ' • ' + genre;
+      progress = 0; playing = true;
+      progressFill.style.width = '0%';
+      curTime.textContent = '0:00';
+      clearInterval(genreTimer); genreTimer = setInterval(cycleGenre, 4000);
+    });
+    queueList.appendChild(item);
+  });
+}
 function setActiveGenre(i) {
   activeIdx = i;
   chips.forEach((c, idx) => c.classList.toggle('active', idx === activeIdx));
-  document.getElementById('npTitle').textContent = chips[activeIdx].textContent;
-  document.getElementById('npArtist').textContent = 'FreeTube • ' + chips[activeIdx].textContent;
+  const genre = chips[activeIdx].textContent;
+  document.getElementById('npTitle').textContent = (TRACKS_PER_GENRE[genre] || ['Now Playing'])[0];
+  document.getElementById('npArtist').textContent = ARTISTS[0] + ' • ' + genre;
   progress = 0; playing = true;
   progressFill.style.width = '0%';
   curTime.textContent = '0:00';
+  buildQueue(genre);
   clearInterval(genreTimer); genreTimer = setInterval(cycleGenre, 4000);
 }
 function cycleGenre() { setActiveGenre((activeIdx + 1) % chips.length); }
@@ -419,6 +523,11 @@ setActiveGenre(0);
 // Toggle play/pause
 const playBtn = popover.querySelector('.ctrl-btn.play');
 playBtn.addEventListener('click', () => { playing = !playing; playBtn.textContent = playing ? '▶' : '⏸'; });
+
+// --- Tooltip ---
+const tooltip = document.getElementById('tooltip');
+function showTooltip(el, text) { tooltip.textContent = text; tooltip.classList.add('show'); const r = el.getBoundingClientRect(); tooltip.style.left = (r.left + r.width/2 - tooltip.offsetWidth/2) + 'px'; tooltip.style.top = (r.top - 36) + 'px'; }
+function hideTooltip() { tooltip.classList.remove('show'); }
 
 // --- Embed modal ---
 const embedModal = document.getElementById('embed-modal');
@@ -442,18 +551,57 @@ copyEmbed.addEventListener('click', async () => {
   setTimeout(() => { copyEmbed.textContent = orig; }, 1500);
 });
 
-// --- 3D Animation ---
+// --- Screenshot capture ---
+document.getElementById('screenshotBtn').addEventListener('click', () => {
+  renderer.render(scene, camera);
+  const link = document.createElement('a');
+  link.download = 'freetube-showcase.png';
+  link.href = renderer.domElement.toDataURL('image/png');
+  link.click();
+});
+
+// --- FPS counter ---
+let lastTime = performance.now(); let frames = 0;
+const fpsEl = document.getElementById('fps');
+function updateFPS() {
+  frames++;
+  const now = performance.now();
+  if (now - lastTime >= 1000) { fpsEl.textContent = frames + ' FPS'; frames = 0; lastTime = now; }
+  requestAnimationFrame(updateFPS);
+}
+updateFPS();
+
+// --- Audio-reactive 3D animation ---
+let audioBeat = 0; let audioTime = 0;
 const clock = new THREE.Clock();
 function tick() {
   const t = clock.getElapsedTime();
+  audioTime += 0.02;
+  audioBeat = Math.sin(t * 2.5) * 0.5 + 0.5;
+
   core.rotation.x += 0.0085; core.rotation.y += 0.012;
   core.children[3] && (core.children[3].rotation.x -= 0.0096);
-  genres.rotation.y += 0.0016;
+  const pulse = 1 + Math.sin(t * 3) * 0.03 * (1 + audioBeat);
+  core.scale.setScalar(pulse);
+  core.children[3] && core.children[3].scale.setScalar(pulse * 1.1);
+
+  genreRing.nodeData.forEach(({node, label}, i) => {
+    const beat = Math.sin(t * 3 + i * 0.5) * 0.4 + 0.6;
+    node.scale.setScalar(0.85 + beat * 0.25);
+    const intensity = 0.3 + beat * 0.5;
+    node.material.emissiveIntensity = intensity;
+    label.scale.setScalar(0.9 + beat * 0.15);
+    node.position.y = node.userData.baseY + Math.sin(t * 4 + i) * 0.4 * beat;
+    label.position.y = node.userData.baseY + 1.25 + Math.sin(t * 4 + i) * 0.4 * beat;
+  });
+
+  genreRing.ring.rotation.y += 0.0012 + audioBeat * 0.002;
   menuBar3D.position.x = Math.sin(t * 0.57) * 1.6;
   npRing.rotation.z += 0.0038;
-  rimLight.intensity = 10 + Math.sin(t * 1.4) * 3;
+  rimLight.intensity = 10 + Math.sin(t * 1.4) * 3 + audioBeat * 5;
   controls.update();
   renderer.render(scene, camera);
+  updateFPS();
   requestAnimationFrame(tick);
 }
 tick();
