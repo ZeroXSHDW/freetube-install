@@ -10,6 +10,8 @@
 <meta property="og:image" content="https://zeroxshdw.github.io/freetube-install/og.png" />
 <meta property="og:url" content="https://zeroxshdw.github.io/freetube-install/" />
 <meta name="twitter:card" content="summary_large_image" />
+<meta name="theme-color" content="#0b1020" />
+<link rel="manifest" href="/manifest.json" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23fefefe' /><path d='M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z' fill='%230f192f' /></svg>"/>
 <style>
   :root {
@@ -172,6 +174,21 @@
   .cta-outline { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.18); color:#eaf0ff; }
   .cta-btn svg { width:16px; height:16px; fill:currentColor; flex-shrink:0; }
 
+  /* Search */
+  #search-bar {
+    position: fixed; left: 50%; top: 70px; transform: translateX(-50%);
+    width: 320px; max-width: 90vw;
+    background: linear-gradient(180deg, rgba(17,24,39,0.94), rgba(17,24,39,0.88));
+    border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 10px 16px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.45); backdrop-filter: blur(20px); z-index: 60;
+    opacity: 0; visibility: hidden; transition: opacity .25s ease; transform: translateY(-10px);
+  }
+  #search-bar.show { opacity: 1; visibility: visible; transform: translateY(0); }
+  #search-bar input { width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#eaf0ff; padding:8px 12px; font-size:13px; }
+  #search-results { max-height: 150px; overflow-y: auto; margin-top: 8px; font-size: 12px; color: #94a3b8; }
+  .search-item { padding: 4px 8px; border-radius: 6px; cursor: pointer; transition: all .15s; }
+  .search-item:hover { background: rgba(255,255,255,0.06); }
+
   /* Embed modal */
   #embed-modal {
     position: fixed; inset: 0; background: rgba(3,6,14,0.82); backdrop-filter: blur(20px);
@@ -255,6 +272,7 @@
     #queue-panel { right: 12px; top: 56px; width: 88vw; }
     #settings-panel { left: 12px; top: 56px; width: 88vw; }
     #history-panel { left: 12px; top: 56px; width: 88vw; }
+    #search-bar { left: 12px; top: 56px; width: 88vw; }
     .queue-item { font-size: 10px; }
 
     #camera-bar { bottom: 70px; gap: 6px; }
@@ -355,6 +373,12 @@
     <div class="history-list" id="historyList"></div>
   </div>
 
+  <!-- Search panel -->
+  <div id="search-bar">
+    <input type="text" id="searchInput" placeholder="Search genres &amp; tracks…" />
+    <div class="search-item" id="searchResults"></div>
+  </div>
+
   <!-- Settings panel -->
   <div id="settings-panel">
     <div class="settings-header">⚙ Settings</div>
@@ -363,6 +387,8 @@
       <option value="neon">Neon Cyber</option>
       <option value="sunset">Sunset</option>
       <option value="ocean">Ocean</option>
+      <option value="matrix">Matrix</option>
+      <option value="forest">Forest</option>
     </select></div>
     <div class="setting-row"><label>Quality</label><select id="qualitySelect">
       <option value="high">High</option>
@@ -380,6 +406,11 @@
     <div class="setting-row"><label>Bloom</label><select id="bloomSelect">
       <option value="on">On</option>
       <option value="off">Off</option>
+    </select></div>
+    <div class="setting-row"><label>Viz mode</label><select id="vizSelect">
+      <option value="equalizer">Equalizer</option>
+      <option value="waveform">Waveform</option>
+      <option value="particles">Particles</option>
     </select></div>
   </div>
 
@@ -407,6 +438,7 @@
       <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11H3V9zm14.5 6c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm-9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
       Get FreeTube at freetubeapp.io
     </a>
+    <button class="cta-btn cta-outline" id="searchBtn" title="Search">🔍</button>
     <button class="cta-btn cta-outline" id="queueBtn" title="Toggle queue panel">📋 Queue</button>
     <button class="cta-btn cta-outline" id="historyBtn" title="View history">⏱ History</button>
     <button class="cta-btn cta-outline" id="embedBtn" title="Get embed code for your site">
@@ -536,6 +568,8 @@ const THEMES = {
   neon:   { bg: 0x050510, core: 0x00ff9f, wire: 0xff00ff, inner: 0xffffff, torus: 0x00ffff, ambient: 0x4444ff, dir: 0xffffff, rim: 0xff00ff, point: 0x00ffff },
   sunset: { bg: 0x1a0a1a, core: 0xff4500, wire: 0xffd700, inner: 0xffeecc, torus: 0xff69b4, ambient: 0xff6600, dir: 0xffdead, rim: 0xff1493, point: 0xffd700 },
   ocean:  { bg: 0x001a2e, core: 0x00b4d8, wire: 0x90e0ef, inner: 0xcaf0f8, torus: 0x48cae4, ambient: 0x0077b6, dir: 0xade8f4, rim: 0x00b4d8, point: 0x90e0ef },
+  matrix: { bg: 0x000a00, core: 0x00ff41, wire: 0x00ff41, inner: 0x00cc00, torus: 0x00ff41, ambient: 0x003300, dir: 0x00aa00, rim: 0x00ff41, point: 0x00ff41 },
+  forest: { bg: 0x0a120a, core: 0x4ade80, wire: 0x22c55e, inner: 0xa7f3d0, torus: 0x22c55e, ambient: 0x14532d, dir: 0xbbf7d0, rim: 0x4ade80, point: 0x22c55e },
 };
 
 function makeTextSprite(text, color = '#ffffff') {
@@ -658,7 +692,6 @@ function createStarfield() {
     transparent: true,
     opacity: 0.8,
     blending: THREE.AdditiveBlending,
-    vertexColors: false
   });
   const stars = new THREE.Points(geo, mat);
   stars.userData = { positions, sizes, depths };
@@ -712,24 +745,25 @@ const queueCount = document.getElementById('queueCount');
 const historyPanel = document.getElementById('history-panel');
 const historyList = document.getElementById('historyList');
 const settingsPanel = document.getElementById('settings-panel');
-let popoverOpen = false; let queueOpen = false; let historyOpen = false; let settingsOpen = false;
+const searchBar = document.getElementById('search-bar');
+let popoverOpen = false; let queueOpen = false; let historyOpen = false; let settingsOpen = false; let searchOpen = false;
 let progress = 0.48; let playing = true; let shuffle = false; let repeat = false; let vol = 0.8;
 let history = [];
+let activeIdx = 0;
 
 // Load persisted state
 try {
   const saved = localStorage.getItem('freetube-showcase');
   if (saved) {
     const s = JSON.parse(saved);
-    if (s.genreIdx !== undefined) { activeIdx = s.genreIdx; }
-    if (s.theme) { document.getElementById('themeSelect').value = s.theme; }
-    if (s.quality) { document.getElementById('qualitySelect').value = s.quality; }
-    if (s.rotate !== undefined) { document.getElementById('rotateSelect').value = s.rotate ? 'on' : 'off'; }
-    if (s.bloom !== undefined) { document.getElementById('bloomSelect').value = s.bloom ? 'on' : 'off'; }
+    if (s.genreIdx !== undefined) activeIdx = s.genreIdx;
+    if (s.theme) document.getElementById('themeSelect').value = s.theme;
+    if (s.quality) document.getElementById('qualitySelect').value = s.quality;
+    if (s.rotate !== undefined) document.getElementById('rotateSelect').value = s.rotate ? 'on' : 'off';
+    if (s.bloom !== undefined) document.getElementById('bloomSelect').value = s.bloom ? 'on' : 'off';
     history = s.history || [];
   }
 } catch (e) {}
-let activeIdx = activeIdx || 0;
 
 // Progress simulation
 const progressFill = document.getElementById('progressFill');
@@ -865,6 +899,38 @@ function toggleSettings() { settingsOpen = !settingsOpen; settingsPanel.classLis
 document.getElementById('settingsBtn').addEventListener('click', toggleSettings);
 document.getElementById('settingsBtn').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSettings(); } });
 
+// Search toggle
+function toggleSearch() { searchOpen = !searchOpen; searchBar.classList.toggle('show', searchOpen); document.getElementById('searchBtn').setAttribute('aria-pressed', String(searchOpen)); if (searchOpen) document.getElementById('searchInput').focus(); }
+document.getElementById('searchBtn').addEventListener('click', toggleSearch);
+document.getElementById('searchBtn').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSearch(); } });
+
+const searchInput = document.getElementById('searchInput');
+searchInput.addEventListener('input', (e) => {
+  const q = e.target.value.toLowerCase();
+  const results = [];
+  GENRES.forEach((g, i) => {
+    if (g.toLowerCase().includes(q)) results.push({ type: 'genre', label: g, idx: i });
+  });
+  TRACKS_PER_GENRE.forEach((tracks, g) => {
+    tracks.forEach((t, j) => {
+      if (t.toLowerCase().includes(q)) results.push({ type: 'track', label: t, genre: g, idx: i });
+    });
+  });
+  const r = document.getElementById('searchResults');
+  r.innerHTML = '';
+  results.slice(0, 8).forEach(res => {
+    const item = document.createElement('div');
+    item.className = 'search-item';
+    item.textContent = res.type === 'genre' ? res.label : `${res.label} — ${res.genre}`;
+    item.addEventListener('click', () => {
+      if (res.type === 'genre') setActiveGenre(res.idx);
+      else setActiveGenre(GENRES.indexOf(res.genre));
+      searchOpen = false; searchBar.classList.remove('show');
+    });
+    r.appendChild(item);
+  });
+});
+
 // Tooltip
 const tooltip = document.getElementById('tooltip');
 function showTooltip(el, text) { tooltip.textContent = text; tooltip.classList.add('show'); const r = el.getBoundingClientRect(); tooltip.style.left = (r.left + r.width/2 - tooltip.offsetWidth/2) + 'px'; tooltip.style.top = (r.top - 36) + 'px'; }
@@ -963,8 +1029,10 @@ document.getElementById('audioSelect').addEventListener('change', async (e) => {
   } else if (e.target.value === 'simulated') { micEnabled = false; }
   saveState();
 });
-document.getElementById('bloomSelect').addEventListener('change', (e) => {
-  bloomPass.enabled = e.target.value === 'on';
+document.getElementById('bloomSelect').addEventListener('change', (e) => { bloomPass.enabled = e.target.value === 'on'; saveState(); });
+document.getElementById('vizSelect').addEventListener('change', (e) => {
+  const mode = e.target.value;
+  eqGroup.visible = mode === 'equalizer';
   saveState();
 });
 
@@ -990,6 +1058,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === ' ') { e.preventDefault(); togglePlay(); }
   if (e.key === 'f' || e.key === 'F') { document.getElementById('fullscreenBtn').click(); }
   if (e.key === '?') { openHelp(); }
+  if (e.key === '/') { toggleSearch(); }
   const n = parseInt(e.key);
   if (!isNaN(n) && n >= 1 && n <= GENRES.length) { setActiveGenre(n - 1); }
 });
@@ -1076,7 +1145,6 @@ function tick() {
   const stars = starfield.children[0];
   if (stars) {
     const pos = stars.geometry.attributes.position.array;
-    const sizes = stars.geometry.attributes.size.array;
     const depths = stars.geometry.attributes.depth.array;
     for (let i = 0; i < pos.length / 3; i++) {
       pos[i*3+1] += depths[i] * 0.05 * (1 + audioBeat);
