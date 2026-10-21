@@ -5,67 +5,184 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>FreeTube · macOS Music System</title>
 <meta property="og:title" content="FreeTube · macOS Music System" />
-<meta property="og:description" content="One command → auto-updating FreeTube, 18 top-charts genres, a ♫ menu bar, Now Playing, favorites & AirPods auto-pause." />
+<meta property="og:description" content="One command → auto-updating FreeTube, 18 top-charts genres, ♫ menu bar app, Now Playing, favorites sync & AirPods auto-pause." />
 <meta property="og:type" content="website" />
 <meta property="og:image" content="https://zeroxshdw.github.io/freetube-install/og.png" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23fefefe' /><path d='M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z' fill='%230f192f' /></svg>"/>
 <style>
-  :root { --bg: #0b1020; --accent: #fbbf24; }
+  :root {
+    --bg: #0b1020;
+    --glass: rgba(20, 24, 38, 0.62);
+    --glass-border: rgba(255,255,255,0.10);
+    --accent: #fbbf24;
+    --text: #eaf0ff;
+    --muted: #8b96b8;
+  }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: radial-gradient(1400px 900px at 50% 30%, #1b2547 0%, #0b1020 60%, #070a14 100%); font-family: -apple-system, 'Segoe UI', Inter, sans-serif; color: #eaf0ff; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: radial-gradient(1500px 900px at 50% 25%, #1b2547 0%, #0b1020 55%, #070a14 100%); font-family: -apple-system, 'SF Pro Text', 'Segoe UI', Inter, sans-serif; color: var(--text); }
   #scene { position: fixed; inset: 0; z-index: 0; }
 
-  .overlay { position: fixed; left: 0; right: 0; top: 22px; text-align: center; pointer-events: none; padding: 0 18px; z-index: 20; }
-  .overlay h1 { margin: 0; font-size: clamp(18px, 7vw, 40px); font-weight: 900; background: linear-gradient(90deg, #f59e0b, #ec4899, #3b82f6, #ef4444); -webkit-background-clip: text; color: transparent; letter-spacing: -0.5px; line-height: 1.05; }
-  .overlay p { margin: 8px 0 14px; color: #8b96b8; font-size: clamp(12px, 2vw, 16px); line-height: 1.5; max-width: 900px; margin-left: auto; margin-right: auto; }
-  .tags { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 6px; }
-  .tag { font-size: 10.5px; color: #cdd6f4; border: 1px solid rgba(205,214,244,0.22); border-radius: 999px; padding: 3.5px 11px; background: rgba(255,255,255,0.05); box-shadow: 0 3px 10px rgba(0,0,0,0.12); letter-spacing: .4px; }
+  /* macOS menu bar simulation (top) */
+  #menu-bar {
+    position: fixed; left: 0; top: 0; right: 0; height: 26px;
+    background: linear-gradient(180deg, rgba(45,55,72,0.78), rgba(45,55,72,0.55));
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    backdrop-filter: blur(18px) saturate(1.2);
+    -webkit-backdrop-filter: blur(18px) saturate(1.2);
+    z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px; pointer-events: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+  #menu-bar .apple {
+    font-size: 14px; color: #cbd5e1; font-weight: 700; pointer-events: auto; user-select: none;
+  }
+  #menu-bar .center { flex:1; display:flex; gap:10px; justify-content:center; font-size:11px; color:var(--muted); }
+  #menu-bar .item { cursor:default; }
+  #menu-bar .freetube {
+    background: rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.25);
+    border-radius:6px; padding:2px 8px; font-size:11px; color:#fde68a; font-weight:600;
+    pointer-events: auto; display:flex; align-items:center; gap:6px; transition:all .15s ease;
+  }
+  #menu-bar .freetube:hover { background:rgba(251,191,36,0.22); transform:translateY(-1px); }
+  #menu-bar .dot { width:6px; height:6px; background:#10b981; border-radius:50%; box-shadow:0 0 8px #10b981; animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+  #menu-bar .status { font-size:11px; color:var(--muted); display:flex; gap:14px; align-items:center; pointer-events: none; }
+  #menu-bar .status span { font-variant-numeric: tabular-nums; }
 
-  .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; pointer-events: auto; z-index: 20; position: relative; margin-top: 8px; }
-  .btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 14px; padding: 11px 24px; transition: transform .2s ease, box-shadow .2s ease, filter .2s ease; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-  .btn:hover { transform: translateY(-2px) scale(1.03); filter: brightness(1.05); }
-  .btn-primary { background: linear-gradient(135deg, #fbbf24, #d97736); color: #0b1020; }
-  .btn-outline { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #eaf0ff; }
-  .btn svg { width: 17px; height: 17px; fill: currentColor; flex-shrink: 0; }
+  /* Now playing popover (menu bar dropdown simulation) */
+  #popover {
+    position: fixed; left: 50%; top: 28px; transform: translateX(-50%);
+    width: 340px; max-width: 92vw;
+    background: linear-gradient(180deg, rgba(17,24,39,0.94), rgba(17,24,39,0.88));
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 14px; box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+    backdrop-filter: blur(24px) saturate(1.3); z-index: 95; pointer-events: auto;
+    opacity: 0; visibility: hidden; transition: opacity .25s ease, transform .25s ease;
+    padding: 14px 14px 12px; overflow: hidden;
+  }
+  #popover.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(4px); }
+  #popover::after {
+    content:''; position:absolute; top:-7px; left:50%; transform:translateX(-50%);
+    width:14px; height:14px; background:rgba(17,24,39,0.94); border-top:1px solid rgba(255,255,255,0.09);
+    border-left:1px solid rgba(255,255,255,0.09); rotate:45deg; z-index:-1;
+  }
 
-  .controls { position: fixed; left: 20px; bottom: 20px; color: #8b96b8; font-size: 12px; z-index: 5; letter-spacing: .4px; text-transform: uppercase; }
-  .status-badge { position: fixed; right: 20px; bottom: 20px; color: #79c0ff; font-size: 12px; border: 1px solid rgba(121,192,255,0.22); background: rgba(3,6,14,0.85); padding: 5px 12px; border-radius: 14px; backdrop-filter: blur(8px); box-shadow: 0 8px 24px rgba(0,0,0,0.35); z-index: 5; display: flex; align-items: center; gap: 6px; letter-spacing: .5px; }
-  .status-badge svg { width: 12px; height: 12px; fill: currentColor; flex-shrink: 0; }
+  .np-header { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .art { width:46px; height:46px; border-radius:10px; background:linear-gradient(135deg,#1f2937,#374151);
+    box-shadow:0 6px 18px rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;
+    border:1px solid rgba(255,255,255,0.08); position:relative; overflow:hidden;
+  }
+  .art::before { content:''; position:absolute; inset:-2px; background:linear-gradient(45deg,#8b5cf6,#ec4899,#f59e0b);
+    animation:rotate 3s linear infinite; border-radius:inherit; mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite:exclude;
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:destination-out;
+  }
+  @keyframes rotate { from{rotate:0deg} to{rotate:360deg} }
+  .np-title { font-size:13px; font-weight:600; color:#fff; line-height:1.15; margin-bottom:2px; text-shadow:0 2px 6px rgba(0,0,0,0.4); }
+  .np-artist { font-size:11px; color:#a1a1aa; opacity:.85; }
+  .np-info { flex:1; min-width:0; }
+  .np-time { display:flex; gap:6px; font-size:10px; color:#71717a; margin-bottom:8px; align-items:center; }
+  .progress-track { width:100%; height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; position:relative; margin-bottom:10px; }
+  .progress-fill { height:100%; background:linear-gradient(90deg,#10b981,#34d399); border-radius:inherit; width:48%; box-shadow:0 0 14px rgba(16,185,129,0.35); position:relative; transition:width .15s linear; }
+  .progress-fill::after { content:''; position:absolute; right:0; top:50%; transform:translateY(-50%); width:8px; height:8px; background:#fff; border-radius:50%; box-shadow:0 0 10px #fff; }
+  .np-controls { display:flex; align-items:center; justify-content:center; gap:14px; }
+  .ctrl-btn { width:36px; height:36px; border-radius:50%; border:none; background:rgba(255,255,255,0.06); color:#e4e4e7; font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+  .ctrl-btn:hover { background:rgba(255,255,255,0.14); color:#fff; transform:scale(1.08); }
+  .ctrl-btn:active { transform:scale(.92); }
+  .ctrl-btn.play { background:linear-gradient(135deg,#22c55e,#15803d); color:#fff; box-shadow:0 4px 14px rgba(34,197,94,0.35); }
 
-  .hint { position: fixed; left: 50%; bottom: 44px; transform: translateX(-50%); color: #6b7280; font-size: 11px; z-index: 5; pointer-events: none; letter-spacing: .5px; text-transform: uppercase; }
+  /* HUD elements */
+  .hud { position:fixed; z-index:40; pointer-events:none; }
+  #genre-hud { left:50%; top:68px; transform:translateX(-50%); display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+  .genre-chip { font-size:10px; color:#cbd5e1; border:1px solid rgba(203,213,225,0.18); border-radius:50px; padding:3px 12px; background:rgba(15,23,42,0.7); backdrop-filter:blur(8px); font-weight:500; text-transform:uppercase; letter-spacing:.3px; }
+  .genre-chip.active { border-color:rgba(251,191,36,0.45); background:rgba(251,191,36,0.12); color:#fde68a; box-shadow:0 0 14px rgba(251,191,36,0.25); }
+  #status-hud { right:20px; top:70px; font-size:11px; color:#94a3b8; text-align:right; letter-spacing:.3px; line-height:1.4; }
+
+  /* CTA buttons */
+  .cta { position:fixed; left:50%; bottom:34px; transform:translateX(-50%); display:flex; gap:12px; justify-content:center; z-index:99; flex-wrap:wrap; }
+  .cta-btn { display:inline-flex; align-items:center; gap:8px; text-decoration:none; border-radius:10px; font-weight:600; font-size:13px; padding:9px 20px; transition:transform .2s,box-shadow .2s,filter .2s; box-shadow:0 8px 24px rgba(0,0,0,0.35); }
+  .cta-btn:hover { transform:translateY(-2px) scale(1.02); filter:brightness(1.05); }
+  .cta-primary { background:linear-gradient(135deg,#fbbf24,#d97736); color:#0b1020; }
+  .cta-outline { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.18); color:#eaf0ff; }
+  .cta-btn svg { width:16px; height:16px; fill:currentColor; flex-shrink:0; }
+
+  .controls { position:fixed; left:20px; bottom:20px; color:var(--muted); font-size:11px; z-index:5; letter-spacing:.4px; text-transform:uppercase; }
+  .status-badge { position:fixed; right:20px; bottom:20px; color:#79c0ff; font-size:11px; border:1px solid rgba(121,192,255,0.22); background:rgba(3,6,14,0.85); padding:4px 10px; border-radius:12px; backdrop-filter:blur(8px); box-shadow:0 6px 20px rgba(0,0,0,0.35); z-index:5; display:flex; align-items:center; gap:5px; letter-spacing:.4px; }
+  .status-badge svg { width:11px; height:11px; fill:currentColor; flex-shrink:0; }
 </style>
 </head>
 <body>
   <canvas id="scene"></canvas>
 
-  <div class="overlay">
-    <h1>FreeTube · macOS Music System</h1>
-    <p>Official DMG installer • Native ♫ menu bar app • Auto-updates • 18 top-chart genres • Now Playing • ♥ favorites sync • 🕓 Watch Later • AirPods auto-pause</p>
-    <div class="tags">
-      <span class="tag">♫ Menu Bar App</span>
-      <span class="tag">18 Genres · Auto-Refreshed</span>
-      <span class="tag">Cross-Genre Radio Mix</span>
-      <span class="tag">♥ & 🕓 Sync</span>
-      <span class="tag">AirPods Auto-Pause</span>
+  <!-- macOS menu bar (top) -->
+  <div id="menu-bar">
+    <div class="apple"> FreeTube</div>
+    <div class="center">
+      <span class="item">FreeTube</span>
+      <span class="item">Edit</span>
+      <span class="item">View</span>
+      <span class="item">History</span>
+      <span class="item">Window</span>
+      <span class="item">Help</span>
     </div>
-    <div class="cta-row">
-      <a class="btn btn-primary" href="https://github.com/ZeroXSHDW/freetube-install" target="_blank" rel="noopener noreferrer">
-        <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-        View Documentation on GitHub
-      </a>
-      <a class="btn btn-outline" href="https://freetubeapp.io/" target="_blank" rel="noopener noreferrer">
-        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11H3V9zm14.5 6c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm-9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
-        Get Official FreeTube App → freetubeapp.io
-      </a>
+    <div class="status">
+      <div class="freetube" id="menuBarIcon" title="FreeTube — Now Playing">
+        <div class="dot"></div> ♫ FreeTubeBar
+      </div>
+      <span>♫</span>
+      <span id="menuTime">04:58</span>
     </div>
   </div>
 
+  <!-- Now playing popover -->
+  <div id="popover">
+    <div class="np-header">
+      <div class="art">🎵</div>
+      <div class="np-info">
+        <div class="np-title" id="npTitle">Now Playing</div>
+        <div class="np-artist" id="npArtist">FreeTube macOS Music System</div>
+      </div>
+    </div>
+    <div class="np-time">
+      <span id="curTime">0:32</span>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <span id="durTime">3:26</span>
+    </div>
+    <div class="np-controls">
+      <button class="ctrl-btn" title="Previous">⏮</button>
+      <button class="ctrl-btn play" title="Play/Pause">▶</button>
+      <button class="ctrl-btn" title="Next">⏭</button>
+    </div>
+  </div>
+
+  <!-- Genre HUD -->
+  <div id="genre-hud" class="hud"></div>
+  <div id="status-hud" class="hud">
+    FreeTube v0.25.3<br>
+    ♫ Menu bar active<br>
+    18 genres refreshed<br>
+    AirPods auto-pause on
+  </div>
+
+  <!-- CTAs -->
+  <div class="cta">
+    <a class="cta-btn cta-primary" href="https://github.com/ZeroXSHDW/freetube-install" target="_blank" rel="noopener noreferrer">
+      <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      Documentation on GitHub
+    </a>
+    <a class="cta-btn cta-outline" href="https://freetubeapp.io/" target="_blank" rel="noopener noreferrer">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11H3V9zm14.5 6c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm-9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+      Get FreeTube at freetubeapp.io
+    </a>
+  </div>
+
   <div class="controls">Drag to rotate · Scroll to zoom</div>
-  <div class="status-badge" title="FreeTube v0.25.3 — Live Showcase">
-    <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 6a6 6 0 1 1-6 6a6 6 0 0 1 6-6Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+  <div class="status-badge" title="FreeTube v0.25.3 — Live">
+    <svg viewBox="0 0 24 24" width="12" height="12"><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 6a6 6 0 1 1-6 6a6 6 0 0 1 6-6Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
     FreeTube v0.25.3
   </div>
-  <div class="hint">FreeTube · macOS Music System</div>
 
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
@@ -138,7 +255,7 @@ function createGenreRing() {
   return ring;
 }
 
-function createMenuBar() {
+function createMenuBar3D() {
   const group = new THREE.Group();
   const bar = new THREE.Mesh(new THREE.BoxGeometry(32, 1.4, 2.6), new THREE.MeshStandardMaterial({ color: 0xf5f5f5, metalness: 0.75, roughness: 0.3 })); group.add(bar);
   const barLabel = makeTextSprite('♫ FreeTubeBar', '#fbbf24');
@@ -171,20 +288,62 @@ const pointLight = new THREE.PointLight(0x22d3ee, 45, 50); pointLight.position.s
 
 const core = createCore();
 const genres = createGenreRing();
-const menuBar = createMenuBar();
+const menuBar3D = createMenuBar3D();
 const radio = createRadioMix();
 const npRing = createNowPlayingRing();
 
-scene.add(menuBar);
+scene.add(menuBar3D);
 
+// --- UI Logic ---
+const menuBarIcon = document.getElementById('menuBarIcon');
+const popover = document.getElementById('popover');
+let popoverOpen = false;
+menuBarIcon.addEventListener('click', () => { popoverOpen = !popoverOpen; popover.classList.toggle('show', popoverOpen); });
+
+// Close popover when clicking elsewhere
+document.addEventListener('click', (e) => {
+  if (!popover.contains(e.target) && !menuBarIcon.contains(e.target)) { popoverOpen = false; popover.classList.remove('show'); }
+});
+
+// Progress simulation
+let progress = 0.48; let playing = true;
+const progressFill = document.getElementById('progressFill');
+const curTime = document.getElementById('curTime');
+const durTime = document.getElementById('durTime');
+function fmt(s){ const m=Math.floor(s/60)|0; const sec=Math.floor(s%60); return `${m}:${sec<10?'0':''}${sec}`; }
+setInterval(() => {
+  if (playing) { progress += 0.0014; if (progress > 1) progress = 0; }
+  progressFill.style.width = (progress * 100) + '%';
+  curTime.textContent = fmt(progress * 206);
+  const t = Date.now();
+  const mins = Math.floor(t / 1000 / 60) % 60; const secs = Math.floor(t / 1000) % 60;
+  document.getElementById('menuTime').textContent = `${mins}:${secs<10?'0':''}${secs}`;
+}, 50);
+
+// Genre HUD chips + active cycling
+const genreHud = document.getElementById('genre-hud');
+GENRES.forEach(g => { const d = document.createElement('div'); d.className='genre-chip'; d.textContent=g; genreHud.appendChild(d); });
+const chips = genreHud.querySelectorAll('.genre-chip');
+let activeIdx = 0;
+setInterval(() => {
+  chips.forEach((c,i) => c.classList.toggle('active', i === activeIdx));
+  document.getElementById('npTitle').textContent = chips[activeIdx].textContent;
+  activeIdx = (activeIdx + 1) % chips.length;
+}, 4000);
+
+// Toggle play/pause
+const playBtn = popover.querySelector('.ctrl-btn.play');
+playBtn.addEventListener('click', () => { playing = !playing; playBtn.textContent = playing ? '▶' : '⏸'; });
+
+// --- 3D Animation ---
 const clock = new THREE.Clock();
 function tick() {
   const t = clock.getElapsedTime();
   core.rotation.x += 0.0085;
   core.rotation.y += 0.012;
-  torus.rotation.x -= 0.0096;
+  core.children[3] && (core.children[3].rotation.x -= 0.0096);
   genres.rotation.y += 0.0016;
-  menuBar.position.x = Math.sin(t * 0.57) * 1.6;
+  menuBar3D.position.x = Math.sin(t * 0.57) * 1.6;
   npRing.rotation.z += 0.0038;
   rimLight.intensity = 10 + Math.sin(t * 1.4) * 3;
   controls.update();
