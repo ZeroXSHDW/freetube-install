@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FreeTubeInstaller Pro — the ♫ super-add-on for FreeTube</title>
+<meta name="description" content="A native macOS add-on that installs & auto-updates FreeTube, auto-skips sponsors, keeps an endless queue, syncs your library, and backs up everything. Buy it once — $9." />
+<meta property="og:title" content="FreeTubeInstaller Pro" />
+<meta property="og:description" content="The native macOS super-add-on for FreeTube. Install, sponsor-skip, endless queue, library sync, backups. One-time $9." />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://zeroxshdw.github.io/freetube-install/og.png" />
+<meta name="theme-color" content="#0b1020" />
+
+<!-- ============================================================
+     STRIPE CONFIG — paste your real Payment Link URL below to start
+     selling. Every "Buy now" button on this page reads from here.
+     Create a Payment Link: https://dashboard.stripe.com/payment-links
+     ============================================================ -->
+<script>
+  window.FREETUBE_PRICING = {
+    paymentLink: 'https://buy.stripe.com/REPLACE_ME',   // ← paste your link here
+    priceLabel:  '$9',
+    productName: 'FreeTubeInstaller Pro',
+  };
+</script>
+
+<style>
+  :root {
+    --bg: #0b1020;
+    --panel: #131a30;
+    --border: rgba(255,255,255,0.09);
+    --text: #eaf0ff;
+    --muted: #8b96b8;
+    --accent: #fbbf24;
+    --accent2: #d97736;
+    --green: #34d399;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, 'SF Pro Text', 'Segoe UI', Inter, sans-serif;
+    color: var(--text);
+    background: radial-gradient(1200px 800px at 50% -10%, #1b2547 0%, var(--bg) 55%, #070a14 100%);
+    min-height: 100vh; line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 28px; max-width: 1080px; margin: 0 auto;
+  }
+  .brand { font-weight: 800; letter-spacing: .5px; font-size: 15px; }
+  .brand em { color: var(--accent); font-style: normal; }
+  .nav-links { display: flex; gap: 20px; font-size: 13px; }
+  .nav-links a { color: var(--muted); } .nav-links a:hover { color: var(--text); }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; }
+
+  .hero { text-align: center; padding: 64px 20px 28px; }
+  .hero .badge {
+    display: inline-block; font-size: 12px; color: #fde68a; background: rgba(251,191,36,0.1);
+    border: 1px solid rgba(251,191,36,0.25); padding: 4px 12px; border-radius: 100px; margin-bottom: 22px;
+  }
+  .hero h1 { font-size: clamp(30px, 5vw, 52px); font-weight: 800; line-height: 1.08; letter-spacing: -.5px; }
+  .hero h1 .accent { color: var(--accent); }
+  .hero .sub { max-width: 680px; margin: 18px auto 0; color: var(--muted); font-size: 16px; }
+  .cta { margin-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .buy {
+    display: inline-block; padding: 14px 34px; border-radius: 12px; font-weight: 700; font-size: 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #0b1020;
+    box-shadow: 0 10px 30px rgba(251,191,36,0.25); transition: transform .15s, box-shadow .15s;
+  }
+  .buy:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(251,191,36,0.35); }
+  .cta-note { font-size: 13px; color: var(--muted); }
+
+  .mock {
+    margin: 40px auto 0; max-width: 820px; border: 1px solid var(--border); border-radius: 14px;
+    overflow: hidden; background: #0d1428; box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  }
+  .mock-bar { height: 30px; background: linear-gradient(180deg,#2b3247,#232a3d); display: flex; align-items: center; padding: 0 14px; gap: 6px; border-bottom: 1px solid var(--border); }
+  .mock-dots { display: flex; gap: 5px; } .mock-dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .mock-dots .r{background:#ff5f57}.mock-dots .y{background:#febc2e}.mock-dots .g{background:#28c840}
+  .mock-title { flex: 1; text-align: center; font-size: 11px; color: var(--muted); font-weight: 600; }
+  .mock-body { display: flex; min-height: 240px; text-align: left; }
+  .mock-side { width: 160px; background: rgba(255,255,255,0.03); border-right: 1px solid var(--border); padding: 14px 10px; font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 9px; flex-shrink: 0; }
+  .mock-side .it { padding: 6px 9px; border-radius: 7px; } .mock-side .it.active { background: rgba(251,191,36,0.14); color: #fde68a; }
+  .mock-main { flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .mock-np { display: flex; gap: 12px; align-items: center; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 11px; padding: 12px; }
+  .mock-art { width: 46px; height: 46px; border-radius: 9px; background: linear-gradient(135deg,#1f2937,#374151); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .mock-meta { flex: 1; } .mock-t { font-size: 13px; font-weight: 600; } .mock-a { font-size: 11px; color: var(--muted); }
+  .mock-chip { font-size: 10px; color: var(--green); background: rgba(16,185,129,0.15); padding: 3px 9px; border-radius: 100px; white-space: nowrap; }
+  .mock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .mock-card { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 9px; padding: 9px 12px; font-size: 11px; color: var(--text); }
+  .mock-card b { color: var(--accent); }
+
+  .features { padding: 60px 0 20px; }
+  .features h2, .buy-band h2 { text-align: center; font-size: 26px; font-weight: 800; letter-spacing: -.3px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 26px; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .card h3 { font-size: 15px; margin-bottom: 6px; }
+  .card h3 .ico { margin-right: 6px; }
+  .card p { font-size: 13px; color: var(--muted); }
+
+  .buy-band { text-align: center; padding: 50px 20px; }
+  .buy-band p { color: var(--muted); margin: 10px 0 20px; }
+  .buy-band .fine { font-size: 12px; margin-top: 26px; }
+
+  .fine { color: var(--muted); font-size: 12px; }
+  .fine a { text-decoration: underline; }
+
+  footer { border-top: 1px solid var(--border); padding: 24px 28px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); max-width: 1080px; margin: 0 auto; }
+  @media (max-width: 640px) { .mock-side { display: none; } .mock-grid { grid-template-columns: 1fr; } .nav-links { display: none; } }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <span class="brand">♫ FREETUBE&nbsp;INSTALLER&nbsp;<em>PRO</em></span>
+  <div class="nav-links">
+    <a href="./index.html">Live 3D demo</a>
+    <a href="https://github.com/ZeroXSHDW/freetube-install">Source</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="badge">Native macOS · Apple Silicon · macOS 14+</div>
+  <h1>The ♫ super-add-on that turns FreeTube into a complete <span class="accent">music system</span>.</h1>
+  <p class="sub">
+    One command installs and auto-updates FreeTube, generates 18 auto-refreshing Top Charts
+    genres, auto-skips sponsors, keeps an endless queue, syncs your library, and backs up
+    everything — from a single native app and a ♫ menu-bar Now Playing popover.
+  </p>
+  <div class="cta">
+    <a class="buy js-buy" href="#">Buy now — $9</a>
+    <span class="cta-note">Instant download · card &amp; Apple&nbsp;Pay · lifetime updates</span>
+  </div>
+
+  <div class="mock">
+    <div class="mock-bar">
+      <div class="mock-dots"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <div class="mock-title">FreeTube · Installer &amp; Music Add-On</div>
+    </div>
+    <div class="mock-body">
+      <div class="mock-side">
+        <div class="it active">🏠 Dashboard</div>
+        <div class="it">⬇ Install / Update</div>
+        <div class="it">🎼 18 Genres</div>
+        <div class="it">▶ Now Playing</div>
+        <div class="it">📚 Library</div>
+        <div class="it">✨ Extras</div>
+      </div>
+      <div class="mock-main">
+        <div class="mock-np">
+          <div class="mock-art">🎵</div>
+          <div class="mock-meta"><div class="mock-t">Never Gonna Give You Up</div><div class="mock-a">Rick Astley · Top Charts — Pop</div></div>
+          <div class="mock-chip">⏭ Sponsor skipped 12s</div>
+        </div>
+        <div class="mock-grid">
+          <div class="mock-card">🍎 FreeTube <b>v0.25.3</b> · auto-updating</div>
+          <div class="mock-card">♫ Menu bar <b>Now Playing</b></div>
+          <div class="mock-card">⏭ SponsorBlock <b>auto-skip</b></div>
+          <div class="mock-card">💾 Snapshots <b>&amp; Doctor</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="features wrap">
+  <h2>Why it stands out</h2>
+  <div class="grid">
+    <div class="card"><h3><span class="ico">⬇</span>One-command install</h3><p>SHA-256-verified FreeTube install with automatic updates — no admin rights, no Gatekeeper friction.</p></div>
+    <div class="card"><h3><span class="ico">🎼</span>18 Top Charts genres</h3><p>Auto-refreshing genre playlists plus a cross-genre Radio Mix, generated while FreeTube is closed.</p></div>
+    <div class="card"><h3><span class="ico">⏭</span>SponsorBlock auto-skip</h3><p>Skips sponsor, intro, outro and filler segments as FreeTube plays, with total seconds saved.</p></div>
+    <div class="card"><h3><span class="ico">🔁</span>Endless queue</h3><p>Deep-links each chart track into FreeTube and auto-advances, so the mix never stops.</p></div>
+    <div class="card"><h3><span class="ico">📚</span>Library sync</h3><p>Reads FreeTube's own history, subscriptions and watch-later; stays in sync with FreeTubeBar.</p></div>
+    <div class="card"><h3><span class="ico">😴</span>Sleep-aware</h3><p>Pauses on sleep, resumes on wake, and auto-pauses when your AirPods come out.</p></div>
+    <div class="card"><h3><span class="ico">💾</span>Backups &amp; Doctor</h3><p>Snapshot every database with one click, and a doctor that verifies and repairs your setup.</p></div>
+    <div class="card"><h3><span class="ico">🔒</span>Local-only</h3><p>No accounts, no analytics, no telemetry. Everything runs on your Mac.</p></div>
+  </div>
+</section>
+
+<section class="buy-band">
+  <h2>One-time $9.</h2>
+  <p>Prebuilt app + Gatekeeper-friendly installer + lifetime updates, delivered instantly.</p>
+  <a class="buy js-buy" href="#">Buy now — $9</a>
+  <p class="fine">
+    FreeTube itself is free &amp; open source (AGPL-3.0). This is a Pro license for the
+    FreeTubeInstaller add-on. Prefer not to pay? <a href="https://github.com/ZeroXSHDW/freetube-install">Build it free from source</a>.
+  </p>
+</section>
+
+<footer>
+  <span>FreeTubeInstaller Pro · macOS 14+ · Apple Silicon</span>
+  <span><a href="./index.html">Live demo</a> · <a href="https://github.com/ZeroXSHDW/freetube-install">GitHub</a></span>
+</footer>
+
+<script>
+  // Wire every "Buy now" button to the Stripe Payment Link configured above.
+  document.addEventListener('DOMContentLoaded', function () {
+    var cfg = window.FREETUBE_PRICING || {};
+    var link = cfg.paymentLink || '';
+    var isPlaceholder = !link || link.indexOf('REPLACE_ME') !== -1;
+    document.querySelectorAll('.js-buy').forEach(function (a) {
+      a.href = isPlaceholder ? 'https://github.com/ZeroXSHDW/freetube-install' : link;
+      if (isPlaceholder) a.textContent = a.textContent.replace('$9', 'Build free');
+    });
+  });
+</script>
+
+</body>
+</html>

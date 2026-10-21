@@ -40,6 +40,29 @@ open ~/Applications/FreeTubeInstaller.app
 
 Source lives under `Sources/FreeTubeApp/` (Models, Views, ViewModels, Services, Helpers).
 
+## Sell it (Stripe)
+
+A clean sales landing page ships at **`docs/buy.html`** (live at
+`…/freetube-install/buy.html`), with a `🛒 Get Pro` button wired into the 3D showcase.
+
+To start selling:
+
+1. Create a **Stripe account** at <https://dashboard.stripe.com>.
+2. Create a **Payment Link** for a one-time product (e.g. $9) at
+   <https://dashboard.stripe.com/payment-links> — no backend is required; Payment
+   Links work directly from static GitHub Pages.
+3. Paste the link (`https://buy.stripe.com/…`) into `docs/buy.html`, replacing the
+   `REPLACE_ME` placeholder in the `window.FREETUBE_PRICING` block.
+
+Every "Buy now" button reads from that one config. Until you paste a real link, the
+buttons gracefully fall back to "Build free" (pointing at the repo).
+
+> ⚖️ **Licensing note:** [FreeTube](https://freetubeapp.io/) is free and open source
+> (AGPL-3.0). This repo's *own* code (installer, Swift add-on, showcase) is MIT — what
+> you sell here is the **FreeTubeInstaller Pro add-on** (prebuilt `.app` + one-click
+> installer + lifetime updates), not FreeTube itself. The page states this and links the
+> free source, so buyers always have the no-cost option.
+
 ## Why this exists
 
 FreeTube's macOS builds are **ad-hoc signed, not notarized**, so the Homebrew cask is disabled and Gatekeeper blocks the app by default. This installer:
