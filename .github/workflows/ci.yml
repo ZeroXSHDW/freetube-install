@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  shellcheck:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: brew install shellcheck
+
+      - name: Run shellcheck on all shell scripts
+        run: |
+          shellcheck \
+            -e SC1091 \
+            -e SC2086 \
+            -e SC2155 \
+            install.sh \
+            scripts/*.sh
+
+  python-lint:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install flake8
+        run: pip install flake8
+
+      - name: Run flake8 on Python scripts
+        run: flake8 scripts/update-top-music.py --max-line-length=120 --ignore=E501,W503,E203
+
+  python-compile:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Compile-check Python scripts
+        run: python3 -m py_compile scripts/update-top-music.py
+
+  shell-syntax:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax-check all shell scripts
+        run: |
+          for f in install.sh scripts/*.sh; do
+            bash -n "$f" || { echo "FAIL: $f"; exit 1; }
+          done
+          echo "All shell scripts pass syntax check."

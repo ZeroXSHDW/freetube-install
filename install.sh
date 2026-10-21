@@ -312,14 +312,16 @@ fi
 mkdir -p "$SCRIPTS_DEST"
 for script in update-top-music.py update-top-music.sh play-genre.sh resume-last.sh \
               play-favorites.sh play-watch-later.sh audio-pause.sh freetube-doctor.sh \
-              freetube-status.sh freetube-backup.sh freetube-cleanup.sh; do
+              freetube-status.sh freetube-backup.sh freetube-cleanup.sh \
+              freetube-launchctl.sh freetube-config-validate.sh; do
   cp "$REPO_DIR/scripts/$script" "$SCRIPTS_DEST/$script"
 done
 chmod +x "$SCRIPTS_DEST/update-top-music.sh" "$SCRIPTS_DEST/play-genre.sh" \
   "$SCRIPTS_DEST/resume-last.sh" "$SCRIPTS_DEST/play-favorites.sh" \
   "$SCRIPTS_DEST/play-watch-later.sh" "$SCRIPTS_DEST/audio-pause.sh" \
   "$SCRIPTS_DEST/freetube-doctor.sh" "$SCRIPTS_DEST/freetube-status.sh" \
-  "$SCRIPTS_DEST/freetube-backup.sh" "$SCRIPTS_DEST/freetube-cleanup.sh"
+  "$SCRIPTS_DEST/freetube-backup.sh" "$SCRIPTS_DEST/freetube-cleanup.sh" \
+  "$SCRIPTS_DEST/freetube-launchctl.sh" "$SCRIPTS_DEST/freetube-config-validate.sh"
 
 # Top Charts LaunchAgent
 sed -e "s|__HOME__|$HOME|g" \

@@ -1,0 +1,46 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-added-large-files
+        args: ['--maxkb=5000']
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-json
+      - id: check-toml
+      - id: mixed-line-ending
+      - id: requirements-txt-fixer
+      - id: no-commit-to-branch
+
+  - repo: https://github.com/davidanson/shellcheck-pre-commit
+    rev: v0.10.2
+    hooks:
+      - id: shellcheck
+        args: ['-e', 'SC1091', '-e', 'SC2086', '-e', 'SC2155']
+
+  - repo: local
+    hooks:
+      - id: bash-syntax
+        name: Bash syntax check
+        entry: bash -n
+        language: system
+        files: \.sh$
+        pass_filenames: true
+
+      - id: python-compile
+        name: Python compile check
+        entry: python3 -m py_compile
+        language: system
+        files: \.py$
+        pass_filenames: true
+
+      - id: swift-syntax
+        name: Swift syntax check
+        entry: swiftc -parse
+        language: system
+        files: \.swift$
+        pass_filenames: true
