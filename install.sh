@@ -197,7 +197,7 @@ for candidate in "$APP_DIR/FreeTube.app" "/Applications/FreeTube.app"; do
 done
 CURRENT_VER=""
 if [[ -n "$CURRENT_APP" ]]; then
-  CURRENT_VER="$("/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$CURRENT_APP/Contents/Info.plist" 2>/dev/null || echo "")"
+  CURRENT_VER=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$CURRENT_APP/Contents/Info.plist" 2>/dev/null || echo "")
 fi
 if [[ -z "$FORCE_REINSTALL" && -n "$CURRENT_VER" && "$CURRENT_VER" == "$VER" ]]; then
   log "FreeTube $VER is already installed at $CURRENT_APP (skipping download)."
