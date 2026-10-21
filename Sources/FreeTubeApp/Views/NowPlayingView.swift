@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct NowPlayingView: View {
     @ObservedObject var viewModel = NowPlayingViewModel.shared
@@ -187,6 +188,34 @@ struct NowPlayingView: View {
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                // Free-tier upsell
+                if !license.isPro {
+                    HStack(spacing: 10) {
+                        Image(systemName: "sparkles")
+                            .foregroundStyle(.orange)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Free tier")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                            Text("Get Pro for SponsorBlock auto-skip & the endless queue")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Get Pro") {
+                            if let url = URL(string: "https://zeroxshdw.github.io/freetube-install/buy.html") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                    }
+                    .padding(12)
+                    .background(Color.orange.opacity(0.08))
+                    .cornerRadius(10)
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.orange.opacity(0.25), lineWidth: 1))
                 }
             }
             .padding()
