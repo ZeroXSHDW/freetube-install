@@ -744,7 +744,13 @@ function tick() {
 
 // Remove loader after first frame
 setTimeout(() => { document.getElementById('loader').classList.add('hidden'); }, 800);
-tick();
+try {
+  setActiveGenre(0);
+  tick();
+} catch (e) {
+  console.error('FreeTube viewer error:', e);
+  document.getElementById('loader').innerHTML = '<div style="color:#ef4444; font-size:14px;">Viewer failed to load. <button onclick="location.reload()" style="margin-top:8px; padding:6px 12px;">Refresh</button></div>';
+}
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
