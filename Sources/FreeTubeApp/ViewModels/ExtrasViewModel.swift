@@ -8,6 +8,7 @@ final class ExtrasViewModel: ObservableObject {
     let backup = BackupService.shared
     let doctor = DoctorService.shared
     let launchAgents = LaunchAgentService.shared
+    let appUpdate = AppUpdateService.shared
 
     @Published var statusLine: String?
     @Published var confirmation: String?
@@ -75,5 +76,27 @@ final class ExtrasViewModel: ObservableObject {
     func toggleAgent(_ name: LaunchAgentName) {
         launchAgents.toggle(name)
         statusLine = "Toggled \(name.displayName)"
+    }
+
+    // MARK: - Self-update
+
+    func checkAppUpdate() {
+        statusLine = "Checking for add-on updates…"
+        Task {
+            await appUpdate.check()
+            statusLine = appUpdate.updateAvailable
+                ? "Add-on update available: \(appUpdate.latestVersion ?? "")"
+                : "Add-on is up to date (v\(appUpdate.currentVersion))"
+        }
+    }
+
+    func applyAppUpdate() {
+        statusLine = "Updating the add-on…"
+        Task {
+            await appUpdate.update()
+            if let error = appUpdate.lastError {
+                statusLine = "Update failed: \(error)"
+            }
+        }
     }
 }

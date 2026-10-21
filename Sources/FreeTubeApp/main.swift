@@ -17,6 +17,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         PowerEventsService.shared.activate()
         NowPlayingViewModel.shared.startMonitoring()
         NSApp.activate(ignoringOtherApps: true)
+        // Silently check for add-on updates at launch.
+        Task { await AppUpdateService.shared.check() }
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -80,6 +82,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let appMenu = NSMenu()
         appMenu.addItem(withTitle: "Check for Updates…", action: #selector(checkForUpdates), keyEquivalent: "u")
         appMenu.addItem(withTitle: "Refresh Top Charts", action: #selector(refreshCharts), keyEquivalent: "r")
+        appMenu.addItem(withTitle: "Check for Add-On Updates…", action: #selector(checkForAddOnUpdates), keyEquivalent: "u")
         appMenu.addItem(NSMenuItem.separator())
         appMenu.addItem(withTitle: "Open FreeTube.app", action: #selector(openFreeTube), keyEquivalent: "o")
         appMenu.addItem(NSMenuItem.separator())
@@ -99,6 +102,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func openFreeTube() {
         InstallationService.shared.openFreeTube()
+    }
+
+    @objc private func checkForAddOnUpdates() {
+        Task { await AppUpdateService.shared.check() }
     }
 }
 

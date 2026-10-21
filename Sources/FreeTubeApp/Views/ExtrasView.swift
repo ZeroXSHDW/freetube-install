@@ -109,6 +109,44 @@ struct ExtrasView: View {
                 .background(Color.gray.opacity(0.08))
                 .cornerRadius(10)
 
+                // Self-update (the add-on itself)
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .foregroundStyle(.teal)
+                        Text("Add-on self-update")
+                            .font(.headline)
+                        Spacer()
+                        if viewModel.appUpdate.updateAvailable {
+                            Text("v\(viewModel.appUpdate.latestVersion ?? "") available")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                        }
+                    }
+                    HStack(spacing: 10) {
+                        Button("Check for Updates") { viewModel.checkAppUpdate() }
+                            .buttonStyle(.bordered)
+                            .disabled(viewModel.appUpdate.isChecking)
+                        if viewModel.appUpdate.updateAvailable {
+                            Button("Update Now") { viewModel.applyAppUpdate() }
+                                .buttonStyle(.borderedProminent)
+                                .disabled(viewModel.appUpdate.isUpdating)
+                        }
+                        Spacer()
+                        Text("installed v\(viewModel.appUpdate.currentVersion)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    if !viewModel.appUpdate.log.isEmpty {
+                        Text(viewModel.appUpdate.log.last ?? "")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding()
+                .background(Color.gray.opacity(0.08))
+                .cornerRadius(10)
+
                 // Backups & cleanup
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
