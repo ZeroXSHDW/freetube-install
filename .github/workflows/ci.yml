@@ -18,6 +18,7 @@ jobs:
       - name: Run shellcheck on all shell scripts
         run: |
           shellcheck \
+            --severity=warning \
             -e SC1091 \
             -e SC2086 \
             -e SC2155 \

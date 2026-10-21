@@ -51,7 +51,11 @@ final class NowPlayingViewModel: ObservableObject {
     func startMonitoring() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.poll() }
+            // Timer fires on the main run loop; assert MainActor isolation so we
+            // can touch the @MainActor view model without a concurrent-capture error.
+            MainActor.assumeIsolated {
+                self?.poll()
+            }
         }
         poll()
         PowerEventsService.shared.activate()
