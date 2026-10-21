@@ -1,15 +1,18 @@
 import AppKit
+import AVFoundation
 
 // FreeTubeBar — a native menu-bar controller for FreeTube.
 //
 // Left-click the ♫ icon for a Now Playing popover (album art, title, artist,
-// a scrub bar, transport, shuffle, favorite). Right-click for the menu
-// (genres, shuffle, favorites, resume-on-login, refresh, etc.).
+// a scrub bar, transport, volume, shuffle, favorite, watch-later).
+// Right-click for the menu (genres, shuffle, favorites, watch-later,
+// resume-on-login, refresh, etc.).
+//
+// The ♫ icon pulses when FreeTube is playing.
 
 @main
 struct FreeTubeBar {
     static let appDelegate = AppDelegate()
-
     static func main() {
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
@@ -28,7 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private var statusItem: NSStatusItem!
     private var menu: NSMenu!
-    private var nowPlayingItem: NSMenuItem?
+    private var nowPlayingItem: NSMenuItem!
     private var resumeItem: NSMenuItem!
     private var genres: [Genre] = []
     private var favorites: [[String: Any]] = []
@@ -51,6 +54,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return "nowplaying-cli"
     }
 
+    private var pulseTimer: Timer?
+    private var isPlaying = false
+
     // MARK: - Lifecycle
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -64,12 +70,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         popover.contentViewController = playerVC
         popover.behavior = .transient
-        popover.animates = false
+        popover.animates = true
         playerVC.onTransport = { [weak self] command in
             self?.runProcess([self?.nowPlayingCLI ?? "nowplaying-cli", command])
         }
         playerVC.onSeek = { [weak self] seconds in
             self?.runProcess([self?.nowPlayingCLI ?? "nowplaying-cli", "seek", "\(Int(seconds.rounded()))"])
+        }
+        playerVC.onSetVolume = { [weak self] level in
+            self?.runProcess([self?.nowPlayingCLI ?? "nowplaying-cli", "volume", "\(Int(level.rounded()))"])
         }
         playerVC.onShuffle = { [weak self] in self?.shuffle() }
         playerVC.onFavoriteToggle = { [weak self] in self?.toggleFavorite() }
@@ -80,6 +89,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         loadManifest()
         loadFavorites()
         rebuildMenu()
+        startPulseTimer()
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        stopPulseTimer()
     }
 
     // MARK: - Manifest & favorites
@@ -123,7 +137,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard let content = try? String(contentsOfFile: "\(supportDir)/history.db", encoding: .utf8) else { return nil }
         var latest: [String: Any]?
         var latestTime: Double = -1
-        for line in content.split(separator: "\n") {
+        for line in content.split(separator: "\n") where !line.isEmpty {
             guard let data = line.data(using: .utf8),
                   let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { continue }
             let t = (obj["timeWatched"] as? NSNumber)?.doubleValue ?? 0
@@ -171,13 +185,54 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func toggleFavorite() { togglePinned(&favorites, path: favoritesPath) }
     private func toggleWatchLater() { togglePinned(&watchLater, path: watchLaterPath) }
 
+    // MARK: - Pulse animation (icon pulses when playing)
+
+    private func startPulseTimer() {
+        stopPulseTimer()
+        pulseTimer = Timer.scheduledTimer(withTimeInterval: 0.6, repeats: true) { [weak self] _ in
+            self?.updatePulse()
+        }
+    }
+
+    private func stopPulseTimer() {
+        pulseTimer?.invalidate()
+        pulseTimer = nil
+    }
+
+    private var pulsePhase: Double = 0
+    private func updatePulse() {
+        let playing = isFreeTubePlaying()
+        if playing != isPlaying {
+            isPlaying = playing
+            if playing { pulsePhase = 0 }
+        }
+        guard isPlaying else {
+            if let button = statusItem.button {
+                button.title = "♫"
+                button.alphaValue = 1.0
+            }
+            return
+        }
+        pulsePhase += 0.25
+        let alpha = 0.55 + 0.45 * sin(pulsePhase)
+        if let button = statusItem.button {
+            button.title = "♫"
+            button.alphaValue = CGFloat(max(0.3, min(1.0, alpha)))
+        }
+    }
+
+    private func isFreeTubePlaying() -> Bool {
+        let output = runProcess([nowPlayingCLI, "get", "playbackRate"])
+        return output.trimmingCharacters(in: .whitespacesAndNewlines) == "1"
+    }
+
     // MARK: - Menu
 
     private func rebuildMenu() {
         let m = NSMenu()
         m.delegate = self
 
-        let header = NSMenuItem(title: "FreeTube", action: nil, keyEquivalent: "")
+        let header = NSMenuItem(title: "FreeTube ♫", action: nil, keyEquivalent: "")
         header.isEnabled = false
         m.addItem(header)
 
@@ -446,9 +501,19 @@ final class SeekSlider: NSSlider {
     }
 }
 
+final class VolumeSlider: NSSlider {
+    var isDragging = false
+    override func mouseDown(with event: NSEvent) {
+        isDragging = true
+        super.mouseDown(with: event)
+        isDragging = false
+    }
+}
+
 final class PlayerViewController: NSViewController {
     var onTransport: ((String) -> Void)?
     var onSeek: ((Double) -> Void)?
+    var onSetVolume: ((Double) -> Void)?
     var onShuffle: (() -> Void)?
     var onFavoriteToggle: (() -> Void)?
     var isFavorite: (() -> Bool)?
@@ -460,6 +525,7 @@ final class PlayerViewController: NSViewController {
     private let artistLabel = NSTextField(labelWithString: "")
     private let timeLabel = NSTextField(labelWithString: "0:00 / 0:00")
     private let seek = SeekSlider()
+    private let volume = VolumeSlider()
     private var heartButton: NSButton!
     private var watchLaterButton: NSButton!
     private var timer: Timer?
@@ -467,12 +533,14 @@ final class PlayerViewController: NSViewController {
     private var lastTitle = ""
 
     override func loadView() {
-        let view = NSView(frame: NSRect(x: 0, y: 0, width: 260, height: 250))
+        let view = NSView(frame: NSRect(x: 0, y: 0, width: 280, height: 290))
 
         artwork.imageScaling = .scaleProportionallyUpOrDown
         artwork.wantsLayer = true
         artwork.layer?.cornerRadius = 8
         artwork.layer?.masksToBounds = true
+        artwork.layer?.borderWidth = 1
+        artwork.layer?.borderColor = NSColor.separatorColor.cgColor
         view.addSubview(artwork)
 
         titleLabel.font = NSFont.boldSystemFont(ofSize: 13)
@@ -485,6 +553,7 @@ final class PlayerViewController: NSViewController {
         artistLabel.textColor = .secondaryLabelColor
         artistLabel.alignment = .center
         artistLabel.lineBreakMode = .byTruncatingTail
+        artistLabel.maximumNumberOfLines = 1
         view.addSubview(artistLabel)
 
         seek.minValue = 0
@@ -499,9 +568,17 @@ final class PlayerViewController: NSViewController {
         timeLabel.alignment = .center
         view.addSubview(timeLabel)
 
+        volume.minValue = 0
+        volume.maxValue = 100
+        volume.isContinuous = true
+        volume.target = self
+        volume.action = #selector(volumeChanged(_:))
+        view.addSubview(volume)
+
         let row = NSStackView()
         row.orientation = .horizontal
-        row.spacing = 16
+        row.spacing = 14
+        row.alignment = .centerY
         row.addArrangedSubview(makeButton("backward.fill", #selector(previous)))
         row.addArrangedSubview(makeButton("play.fill", #selector(playPause)))
         row.addArrangedSubview(makeButton("forward.fill", #selector(next)))
@@ -512,7 +589,7 @@ final class PlayerViewController: NSViewController {
         row.addArrangedSubview(watchLaterButton)
         view.addSubview(row)
 
-        [artwork, titleLabel, artistLabel, seek, timeLabel, row].forEach { $0.translatesAutoresizingMaskIntoConstraints = false }
+        [artwork, titleLabel, artistLabel, seek, timeLabel, volume, row].forEach { $0.translatesAutoresizingMaskIntoConstraints = false }
 
         NSLayoutConstraint.activate([
             artwork.topAnchor.constraint(equalTo: view.topAnchor, constant: 14),
@@ -535,7 +612,11 @@ final class PlayerViewController: NSViewController {
             timeLabel.topAnchor.constraint(equalTo: seek.bottomAnchor, constant: 2),
             timeLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
-            row.topAnchor.constraint(equalTo: timeLabel.bottomAnchor, constant: 8),
+            volume.topAnchor.constraint(equalTo: timeLabel.bottomAnchor, constant: 10),
+            volume.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 14),
+            volume.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -14),
+
+            row.topAnchor.constraint(equalTo: volume.bottomAnchor, constant: 10),
             row.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             row.bottomAnchor.constraint(lessThanOrEqualTo: view.bottomAnchor, constant: -12),
         ])
@@ -580,8 +661,6 @@ final class PlayerViewController: NSViewController {
     }
 
     private func refresh() {
-        // nowplaying-cli's "get elapsedTime" key is unreliable, so read the raw
-        // MediaRemote dictionary which carries title/artist/duration/position/art.
         let json = runProcess(["nowplaying-cli", "get-raw"])
         guard let data = json.data(using: .utf8),
               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
@@ -601,6 +680,10 @@ final class PlayerViewController: NSViewController {
         if !seek.isDragging {
             seek.maxValue = duration > 0 ? duration : 1
             seek.doubleValue = elapsed
+        }
+
+        if let rate = obj["kMRMediaRemoteNowPlayingInfoPlaybackRate"] as? Double {
+            volume.isEnabled = rate == 1
         }
 
         if title != lastTitle {
@@ -623,6 +706,11 @@ final class PlayerViewController: NSViewController {
     @objc private func seekChanged(_ sender: NSSlider) {
         onSeek?(sender.doubleValue)
     }
+
+    @objc private func volumeChanged(_ sender: NSSlider) {
+        onSetVolume?(sender.doubleValue)
+    }
+
     @objc private func playPause() { onTransport?("togglePlayPause") }
     @objc private func next() { onTransport?("next") }
     @objc private func previous() { onTransport?("previous") }
@@ -631,7 +719,6 @@ final class PlayerViewController: NSViewController {
         onFavoriteToggle?()
         refreshHeart()
     }
-
     @objc private func watchLater() {
         onWatchLaterToggle?()
         refreshWatchLaterHeart()

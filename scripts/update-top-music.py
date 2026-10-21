@@ -6,10 +6,6 @@ popular music"), resolves each song to its official YouTube video through
 Invidious, and writes one FreeTube playlist per genre plus a manifest that the
 menu-bar app reads.
 
-Genres span Pop, Hip-Hop/Rap, Rock, Country, R&B/Soul, Electronic, Dance,
-Alternative, Latin, Reggae, Jazz, Classical, Blues, Singer/Songwriter, World,
-Soundtrack, plus Russian Rap and Russian Pop.
-
 Run this only while FreeTube is closed. The companion shell wrapper enforces
 that. Requires only the Python standard library.
 """
@@ -25,7 +21,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
 
@@ -59,29 +55,52 @@ RADIO_ID = "ft-playlist--b3f8026b-4773-43a6-9f35-a477dca1b96d"
 RADIO_LIMIT = 100
 FAVORITES_ID = "favorites"
 WATCH_LATER_ID = "watchLater"
+CACHE_DIR = pathlib.Path.home() / "Library/Application Support/FreeTube/.cache"
+RESOLVE_CACHE = CACHE_DIR / "resolve-cache.json"
+MAX_RESOLVE_RETRIES = 2
+REQUEST_DELAY = 0.4  # seconds between Invidious requests to be polite
 
 
-def http_text(url: str, timeout: int = 25) -> str:
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return resp.read().decode("utf-8", "replace")
+def http_text(url: str, timeout: int = 25, retries: int = 2) -> str:
+    last_err = None
+    for attempt in range(retries + 1):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return resp.read().decode("utf-8", "replace")
+        except Exception as exc:
+            last_err = exc
+            if attempt < retries:
+                time.sleep(0.8 * (attempt + 1))
+    raise last_err
 
 
-def http_json(url: str, timeout: int = 25):
-    return json.loads(http_text(url, timeout))
+def http_json(url: str, timeout: int = 25, retries: int = 2):
+    return json.loads(http_text(url, timeout, retries))
 
 
 def get_instances() -> list[str]:
     try:
-        data = http_json(INSTANCES_URL, timeout=20)
+        data = http_json(INSTANCES_URL, timeout=20, retries=1)
     except Exception:
         return ["https://invidious.f5.si"]
     instances = []
-    for host, info in data:
-        if info.get("api") and "onion" not in host and "i2p" not in host:
-            uri = (info.get("uri") or "").rstrip("/")
-            if uri.startswith("http"):
-                instances.append(uri)
+    for item in data:
+        # api.invidious.io returns [host, info] pairs
+        if isinstance(item, (list, tuple)) and len(item) == 2:
+            host, info = item
+        elif isinstance(item, dict):
+            host = item.get("uri", "")
+            info = item
+        else:
+            continue
+        if not info.get("api"):
+            continue
+        if "onion" in host or "i2p" in host:
+            continue
+        uri = (info.get("uri") or host or "").rstrip("/")
+        if uri.startswith("http"):
+            instances.append(uri)
     return instances[:5] or ["https://invidious.f5.si"]
 
 
@@ -108,16 +127,47 @@ def clean_title(title: str) -> str:
     return re.sub(r"\s*\((feat|ft|with)[^)]*\).*$", "", title, flags=re.IGNORECASE).strip()
 
 
-def search_invidious(instances: list[str], query: str):
-    for instance in instances:
+def load_resolve_cache() -> dict:
+    if RESOLVE_CACHE.is_file():
+        try:
+            return json.loads(RESOLVE_CACHE.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
+    return {}
+
+
+def save_resolve_cache(cache: dict) -> None:
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        RESOLVE_CACHE.write_text(json.dumps(cache, ensure_ascii=False), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def search_invidious(instances: list[str], query: str) -> list:
+    # Shuffle instances so we don't always hammer the same one.
+    order = list(instances)
+    random.shuffle(order)
+    for instance in order:
         try:
             url = f"{instance}/api/v1/search?q={urllib.parse.quote(query)}&type=video"
-            result = http_json(url, timeout=25)
+            result = http_json(url, timeout=25, retries=1)
             if isinstance(result, list):
                 return result
+            time.sleep(REQUEST_DELAY)
         except Exception:
             continue
     return []
+
+
+def is_bad_match(item: dict) -> bool:
+    """Heuristics that exclude non-music or mis-resolved results."""
+    title = (item.get("title") or "").lower()
+    if item.get("liveNow"):
+        return True
+    if re.search(r"\blive\b|🔴|stream|пресс|конференц|обзор|прохождение|unboxing|review", title):
+        return True
+    return False
 
 
 def score_result(item: dict, artist: str, title: str) -> int:
@@ -138,21 +188,18 @@ def score_result(item: dict, artist: str, title: str) -> int:
     return score
 
 
-def is_bad_match(item: dict) -> bool:
-    """Heuristics that exclude non-music or mis-resolved results."""
-    title = (item.get("title") or "").lower()
-    if item.get("liveNow"):
-        return True
-    if re.search(r"\blive\b|🔴|stream|пресс|конференц|обзор|прохождение", title):
-        return True
-    return False
+def resolve_song(instances: list[str], artist: str, title: str,
+                 cache: dict) -> dict | None:
+    cache_key = f"{primary_artist(artist).lower()}||{clean_title(title).lower()}"
+    if cache_key in cache:
+        return cache[cache_key]
 
-
-def resolve_song(instances: list[str], artist: str, title: str) -> dict | None:
     query = f"{primary_artist(artist)} {clean_title(title)}"
     results = search_invidious(instances, query)
     if not results:
+        cache[cache_key] = None
         return None
+
     candidates = []
     for item in results:
         if is_bad_match(item):
@@ -160,11 +207,15 @@ def resolve_song(instances: list[str], artist: str, title: str) -> dict | None:
         score = score_result(item, artist, title)
         if score < 2:  # require a title OR artist match, no random fallbacks
             continue
-        candidates.append((score, item.get("viewCount") or 0, item))
+        view_count = item.get("viewCount") or 0
+        candidates.append((score, view_count, item))
+
     if not candidates:
+        cache[cache_key] = None
         return None
+
     _, _, best = max(candidates, key=lambda c: (c[0], c[1]))
-    return {
+    resolved = {
         "videoId": best.get("videoId"),
         "title": best.get("title") or title,
         "author": best.get("author") or artist,
@@ -172,6 +223,8 @@ def resolve_song(instances: list[str], artist: str, title: str) -> dict | None:
         "lengthSeconds": best.get("lengthSeconds") or 0,
         "published": (best.get("published") or 0) * 1000,
     }
+    cache[cache_key] = resolved
+    return resolved
 
 
 def oembed_available(video_id: str) -> bool:
@@ -189,40 +242,46 @@ def oembed_available(video_id: str) -> bool:
         return True
 
 
-def build_genre(instances: list[str], name: str, country: str, genre_id: int, limit: int) -> list[dict]:
+def build_genre(instances: list[str], name: str, country: str, genre_id: int,
+                limit: int, cache: dict) -> list[dict]:
     songs = fetch_chart(country, genre_id, limit)
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        resolved = list(pool.map(lambda s: resolve_song(instances, s[0], s[1]), songs))
+    resolved = []
+    for artist, title in songs:
+        r = resolve_song(instances, artist, title, cache)
+        if r and r["videoId"]:
+            resolved.append(r)
+        time.sleep(REQUEST_DELAY)
 
-    video_ids = [r["videoId"] for r in resolved if r and r["videoId"]]
+    video_ids = [r["videoId"] for r in resolved]
+    flags = {}
     with ThreadPoolExecutor(max_workers=8) as pool:
-        flags = list(pool.map(oembed_available, video_ids))
+        future_to_vid = {pool.submit(oembed_available, vid): vid for vid in video_ids}
+        for future in as_completed(future_to_vid):
+            vid = future_to_vid[future]
+            try:
+                flags[vid] = future.result()
+            except Exception:
+                flags[vid] = True
 
     now = int(time.time() * 1000)
     videos: list[dict] = []
     seen: set[str] = set()
-    flag_iter = iter(flags)
     for r in resolved:
-        if not r or not r["videoId"]:
-            continue
-        ok = next(flag_iter)
         vid = r["videoId"]
-        if not ok or vid in seen:
+        if not flags.get(vid, True) or vid in seen:
             continue
         seen.add(vid)
-        videos.append(
-            {
-                "videoId": vid,
-                "title": r["title"],
-                "author": r["author"],
-                "authorId": r["authorId"],
-                "lengthSeconds": r["lengthSeconds"],
-                "published": r["published"],
-                "timeAdded": now,
-                "playlistItemId": str(uuid.uuid4()),
-                "type": "video",
-            }
-        )
+        videos.append({
+            "videoId": vid,
+            "title": r["title"],
+            "author": r["author"],
+            "authorId": r["authorId"],
+            "lengthSeconds": r["lengthSeconds"],
+            "published": r["published"],
+            "timeAdded": now,
+            "playlistItemId": str(uuid.uuid4()),
+            "type": "video",
+        })
     return videos
 
 
@@ -234,7 +293,10 @@ def load_playlists(path: pathlib.Path) -> tuple[dict[str, dict], list[str]]:
             line = line.strip()
             if not line:
                 continue
-            doc = json.loads(line)
+            try:
+                doc = json.loads(line)
+            except json.JSONDecodeError:
+                continue
             doc_id = doc.get("_id")
             if doc.get("$$deleted"):
                 if doc_id in docs:
@@ -316,9 +378,15 @@ def main() -> int:
     limit = DEFAULT_LIMIT
     only = None
     if "--limit" in args:
-        limit = int(args[args.index("--limit") + 1])
+        try:
+            limit = int(args[args.index("--limit") + 1])
+        except (ValueError, IndexError):
+            pass
     if "--only" in args:
-        only = {n.strip().lower() for n in args[args.index("--only") + 1].split(",")}
+        try:
+            only = {n.strip().lower() for n in args[args.index("--only") + 1].split(",")}
+        except (ValueError, IndexError):
+            pass
 
     db_path = (
         pathlib.Path(db_arg).expanduser()
@@ -366,6 +434,7 @@ def main() -> int:
     instances = get_instances()
     print("Instances:", instances)
 
+    cache = load_resolve_cache()
     docs, order = load_playlists(db_path)
     now = int(time.time() * 1000)
     refreshed = time.strftime("%Y-%m-%d %H:%M")
@@ -374,9 +443,11 @@ def main() -> int:
     results = []
     for name, country, genre_id, pid in genres:
         print(f"\n== {name} ==")
-        videos = build_genre(instances, name, country, genre_id, limit)
+        videos = build_genre(instances, name, country, genre_id, limit, cache)
         results.append((name, pid, videos))
         print(f"   resolved {len(videos)} videos")
+
+    save_resolve_cache(cache)
 
     # Build a cross-genre "Radio Mix" from everything resolved this run.
     pool: list[dict] = []
@@ -419,7 +490,7 @@ def main() -> int:
         else:
             print(f"WARN  {name}: only {len(videos)} songs resolved (< {MIN_SONGS}); keeping existing.")
 
-    # Remove stale managed playlists (old "Top Charts —" not in the current set).
+    # Remove stale managed playlists.
     for doc_id in list(order):
         doc = docs[doc_id]
         if doc.get("playlistName", "").startswith(MANAGED_PREFIX) and doc_id not in managed_ids:

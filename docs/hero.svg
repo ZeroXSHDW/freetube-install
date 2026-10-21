@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="440" viewBox="0 0 1400 440" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1020"/><stop offset="1" stop-color="#141c38"/>
+    </linearGradient>
+    <linearGradient id="acc" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f59e0b"/><stop offset="0.5" stop-color="#ec4899"/><stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+  <rect width="1400" height="440" fill="url(#bg)"/>
+
+  <g transform="translate(150,220)">
+    <circle r="92" fill="none" stroke="url(#acc)" stroke-width="5"/>
+    <text y="36" text-anchor="middle" font-size="104" fill="url(#acc)">♫</text>
+  </g>
+
+  <text x="330" y="185" fill="#eaf0ff" font-size="54" font-weight="800" letter-spacing="-1">FreeTube · macOS Music System</text>
+  <text x="332" y="232" fill="#aab3d0" font-size="24">Turn FreeTube into an Apple Music-style jukebox</text>
+  <text x="332" y="270" fill="#8b96b8" font-size="18">one install command · auto-updating · top charts in 18 genres · ♫ menu bar · Now Playing · favorites · AirPods auto-pause</text>
+
+  <g transform="translate(332,316)" font-size="16" fill="#cdd6f4">
+    <rect x="0" y="-22" width="176" height="40" rx="20" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.15"/>
+    <text x="88" y="3" text-anchor="middle">curl → install.sh</text>
+    <rect x="196" y="-22" width="196" height="40" rx="20" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.15"/>
+    <text x="294" y="3" text-anchor="middle">18 Top Charts genres</text>
+    <rect x="412" y="-22" width="196" height="40" rx="20" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.15"/>
+    <text x="510" y="3" text-anchor="middle">♫ menu bar + scrub</text>
+  </g>
+
+  <!-- mini node ring on the right -->
+  <g transform="translate(1120,220)">
+    <circle r="120" fill="none" stroke="#33405f" stroke-width="1.5"/>
+    <g fill="#f59e0b"><circle cx="120" cy="0" r="9"/></g>
+    <g fill="#ec4899"><circle cx="60" cy="104" r="9"/></g>
+    <g fill="#22d3ee"><circle cx="-60" cy="104" r="9"/></g>
+    <g fill="#34d399"><circle cx="-120" cy="0" r="9"/></g>
+    <g fill="#a78bfa"><circle cx="-60" cy="-104" r="9"/></g>
+    <g fill="#facc15"><circle cx="60" cy="-104" r="9"/></g>
+    <circle r="26" fill="#7c3aed"/>
+    <text y="9" text-anchor="middle" font-size="26" fill="#fff">♫</text>
+  </g>
+</svg>
