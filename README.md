@@ -1,3 +1,7 @@
+<!-- zerodevllc-theme -->
+[![ZeroDevLLC](https://img.shields.io/badge/ZeroDevLLC-cyber--deck-00ff88?style=for-the-badge&labelColor=050a08)](https://ZeroDevLLC.com)
+[![Theme](https://img.shields.io/badge/theme-3D%20cyber-00f0ff?style=flat-square&labelColor=050a08)](https://ZeroDevLLC.com)
+
 # FreeTube macOS installer
 
 Installs the official [FreeTube](https://freetubeapp.io/) macOS release with SHA-256 verification, writes a tuned base config, generates the Top Charts music playlists, installs the menu bar app, and registers the auto-updater and login helpers — all from a single command. Companion to [freetube-configs](https://github.com/ZeroXSHDW/freetube-configs-main), which holds the portable settings, curated playlists, and profiles.
@@ -318,3 +322,7 @@ MIT — see [LICENSE](LICENSE).
 ---
 
 Part of the [ZeroDevLLC](https://ZeroDevLLC.com) ecosystem.
+
+---
+
+<p align="center"><sub><code>ZeroDevLLC · cyber-deck · local-first · no cloud · no telemetry</code></sub></p>
