@@ -314,3 +314,7 @@ docs/
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+---
+
+Part of the [ZeroDevLLC](https://ZeroDevLLC.com) ecosystem.
